@@ -37,7 +37,7 @@ const ChatSidebar = ({
   onLogout
 }: ChatSidebarProps) => {
   return (
-    <>
+    <div>
       {/* Overlay for mobile */}
       {isOpen && (
         <div 
