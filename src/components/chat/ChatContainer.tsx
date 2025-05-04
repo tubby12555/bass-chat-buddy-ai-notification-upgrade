@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { v4 as uuidv4 } from "uuid";
@@ -128,6 +129,12 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
       
       const webhookUrl = `https://n8n.srv728397.hstgr.cloud/webhook/${selectedModel}`;
       
+      console.log("Sending message to webhook:", {
+        userId: USER_ID,
+        sessionId: SESSION_ID,
+        userMessage: message
+      });
+      
       const response = await fetch(webhookUrl, {
         method: "POST",
         headers: {
@@ -145,7 +152,37 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
       }
       
       const data = await response.json();
-      const assistantMessage = data.reply || "I'm sorry, I couldn't process your request.";
+      console.log("Received response from webhook:", data);
+      
+      // Handle different response formats from n8n
+      let assistantMessage = "";
+      
+      if (Array.isArray(data) && data.length > 0) {
+        // If data is an array, take the first item's output or content
+        if (data[0].output) {
+          assistantMessage = data[0].output;
+        } else if (data[0].content) {
+          assistantMessage = data[0].content;
+        } else if (data[0].reply) {
+          assistantMessage = data[0].reply;
+        } else if (typeof data[0] === 'string') {
+          assistantMessage = data[0];
+        } else {
+          assistantMessage = JSON.stringify(data[0]);
+        }
+      } else if (data.output) {
+        // Direct output property
+        assistantMessage = data.output;
+      } else if (data.reply) {
+        // Direct reply property
+        assistantMessage = data.reply;
+      } else if (typeof data === 'string') {
+        // Direct string response
+        assistantMessage = data;
+      } else {
+        // Fallback: stringify the entire response
+        assistantMessage = JSON.stringify(data);
+      }
       
       // Update state with assistant response
       setSessions(prev => prev.map(session => {
