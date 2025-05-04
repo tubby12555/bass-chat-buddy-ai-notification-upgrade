@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { v4 as uuidv4 } from "uuid";
@@ -174,17 +173,18 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
     }));
     
     try {
-      // Send message to webhook
+      // Send message to webhook - using the same webhook URL for all models
       const SESSION_ID = currentSessionId;
       const USER_ID = user?.id || "anonymous";
       
-      const webhookUrl = `https://n8n.srv728397.hstgr.cloud/webhook/${selectedModel}`;
+      // Always use the same webhook URL regardless of model
+      const webhookUrl = "https://n8n.srv728397.hstgr.cloud/webhook/gemini";
       
       console.log("Sending message to webhook:", {
         userId: USER_ID,
         sessionId: SESSION_ID,
         userMessage: message,
-        modelType: selectedModel
+        modelType: selectedModel // This is the only parameter that changes based on model selection
       });
       
       const response = await fetch(webhookUrl, {
@@ -196,7 +196,7 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
           userId: USER_ID,
           sessionId: SESSION_ID,
           userMessage: message,
-          modelType: selectedModel
+          modelType: selectedModel // Send the selected model type to n8n for routing
         }),
       });
       
@@ -309,33 +309,35 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
 
   return (
     <div className="flex h-screen overflow-hidden bg-chat">
-      <style jsx global>{`
-        :root {
-          --chat-bg: ${currentModel.background};
-          --chat-accent: ${currentModel.accent};
-          --chat-highlight: ${currentModel.highlight};
-          --chat-user-msg: ${currentModel.messageUser};
-          --chat-assistant-msg: ${currentModel.messageAssistant};
-        }
-        .bg-chat {
-          background-color: var(--chat-bg);
-        }
-        .bg-chat-accent {
-          background-color: var(--chat-accent);
-        }
-        .text-chat-highlight {
-          color: var(--chat-highlight);
-        }
-        .bg-chat-assistant {
-          background-color: var(--chat-assistant-msg);
-        }
-        .border-chat-accent {
-          border-color: var(--chat-accent);
-        }
-        .border-chat-assistant {
-          border-color: var(--chat-assistant-msg, #121212);
-        }
-      `}</style>
+      <style>
+        {`
+          :root {
+            --chat-bg: ${currentModel.background};
+            --chat-accent: ${currentModel.accent};
+            --chat-highlight: ${currentModel.highlight};
+            --chat-user-msg: ${currentModel.messageUser};
+            --chat-assistant-msg: ${currentModel.messageAssistant};
+          }
+          .bg-chat {
+            background-color: var(--chat-bg);
+          }
+          .bg-chat-accent {
+            background-color: var(--chat-accent);
+          }
+          .text-chat-highlight {
+            color: var(--chat-highlight);
+          }
+          .bg-chat-assistant {
+            background-color: var(--chat-assistant-msg);
+          }
+          .border-chat-accent {
+            border-color: var(--chat-accent);
+          }
+          .border-chat-assistant {
+            border-color: var(--chat-assistant-msg, #121212);
+          }
+        `}
+      </style>
 
       <ChatSidebar
         sessions={sessions}
