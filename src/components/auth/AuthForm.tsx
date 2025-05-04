@@ -1,18 +1,11 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { createClient } from "@supabase/supabase-js";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BassLogo from "../shared/BassLogo";
-
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { supabase } from "@/integrations/supabase/client";
 
 interface AuthFormProps {
   onAuthSuccess: () => void;

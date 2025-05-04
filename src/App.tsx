@@ -5,17 +5,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
-
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);

@@ -1,19 +1,12 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { v4 as uuidv4 } from "uuid";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
 import ChatSidebar from "./ChatSidebar";
 import ChatWindow from "./ChatWindow";
 import { Button } from "@/components/ui/button";
 import { Loader, LogOut } from "lucide-react";
 import { ModelType } from "@/types/chat";
-
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 interface ChatContainerProps {
   onLogout: () => void;
