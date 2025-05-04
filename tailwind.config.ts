@@ -64,10 +64,10 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				chat: {
-					DEFAULT: '#1A1F2C',
-					sidebar: '#221F26',
-					user: '#000000e6',
-					assistant: '#2D3748',
+					DEFAULT: '#000000',
+					sidebar: '#000000',
+					user: '#000000',
+					assistant: '#121212',
 					accent: '#8B5CF6',
 					highlight: '#1EAEDB',
 				},
