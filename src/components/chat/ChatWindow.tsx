@@ -6,6 +6,8 @@ import { Send } from "lucide-react";
 import MessageBubble from "./MessageBubble";
 import LoadingIndicator from "./LoadingIndicator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import BassLogo from "../shared/BassLogo";
+import { ModelType } from "@/types/chat";
 
 interface Message {
   id: string;
@@ -18,9 +20,10 @@ interface ChatWindowProps {
   messages: Message[];
   onSendMessage: (message: string) => void;
   isLoading: boolean;
+  modelType: ModelType;
 }
 
-const ChatWindow = ({ messages, onSendMessage, isLoading }: ChatWindowProps) => {
+const ChatWindow = ({ messages, onSendMessage, isLoading, modelType }: ChatWindowProps) => {
   const [inputText, setInputText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -75,6 +78,7 @@ const ChatWindow = ({ messages, onSendMessage, isLoading }: ChatWindowProps) => 
             <MessageBubble 
               key={message.id}
               message={message}
+              modelType={modelType}
             />
           ))}
           
@@ -126,5 +130,4 @@ const ChatWindow = ({ messages, onSendMessage, isLoading }: ChatWindowProps) => 
   );
 };
 
-import BassLogo from "../shared/BassLogo";
 export default ChatWindow;

@@ -5,9 +5,10 @@ import { v4 as uuidv4 } from "uuid";
 import { supabase } from "@/integrations/supabase/client";
 import ChatSidebar from "./ChatSidebar";
 import ChatWindow from "./ChatWindow";
+import HistoryViewer from "./HistoryViewer";
 import { Button } from "@/components/ui/button";
 import { Loader, LogOut } from "lucide-react";
-import { ModelType } from "@/types/chat";
+import { ModelType, MODEL_THEMES } from "@/types/chat";
 
 interface ChatContainerProps {
   onLogout: () => void;
@@ -34,8 +35,50 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [selectedModel, setSelectedModel] = useState<ModelType>("qwen");
   const [user, setUser] = useState<any>(null);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const { toast } = useToast();
   const isMobile = window.innerWidth < 768;
+
+  // Apply theme based on selected model
+  useEffect(() => {
+    const model = selectedModel;
+    const theme = MODEL_THEMES[model];
+    
+    // Set CSS variables for theme
+    document.documentElement.style.setProperty('--chat-bg', theme.background);
+    document.documentElement.style.setProperty('--chat-accent', theme.accent);
+    document.documentElement.style.setProperty('--chat-highlight', theme.highlight);
+    document.documentElement.style.setProperty('--chat-user-msg', theme.messageUser);
+    document.documentElement.style.setProperty('--chat-assistant-msg', theme.messageAssistant);
+    
+    // Update tailwind classes
+    const root = document.documentElement;
+    root.style.setProperty('--primary', theme.accent);
+    
+    // Try to restore this session from local storage
+    const savedSessions = localStorage.getItem('chatSessions');
+    if (savedSessions) {
+      try {
+        const parsed = JSON.parse(savedSessions);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSessions(parsed);
+          
+          // Find the last session with this model
+          const lastSessionWithModel = parsed.find(s => 
+            s.messages.some(m => m.content.includes(`Using ${theme.name} model`))
+          );
+          
+          if (lastSessionWithModel) {
+            setCurrentSessionId(lastSessionWithModel.id);
+          } else if (currentSessionId === "") {
+            setCurrentSessionId(parsed[0].id);
+          }
+        }
+      } catch (e) {
+        console.error("Error parsing saved sessions:", e);
+      }
+    }
+  }, [selectedModel]);
 
   useEffect(() => {
     if (isMobile) {
@@ -66,6 +109,13 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
     };
   }, []);
 
+  // Save sessions to local storage
+  useEffect(() => {
+    if (sessions.length > 0) {
+      localStorage.setItem('chatSessions', JSON.stringify(sessions));
+    }
+  }, [sessions]);
+
   useEffect(() => {
     if (sessions.length === 0) {
       createNewSession();
@@ -73,6 +123,7 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
   }, [sessions]);
 
   const createNewSession = () => {
+    const modelName = MODEL_THEMES[selectedModel].name;
     const newSessionId = uuidv4();
     const newSession: Session = {
       id: newSessionId,
@@ -82,7 +133,7 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
         {
           id: uuidv4(),
           role: "system",
-          content: "Welcome to BassProChat! How can I assist with your fishing questions today?",
+          content: `Welcome to BassProChat! Using ${modelName} model. How can I assist with your fishing questions today?`,
           timestamp: Date.now()
         }
       ]
@@ -132,7 +183,8 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
       console.log("Sending message to webhook:", {
         userId: USER_ID,
         sessionId: SESSION_ID,
-        userMessage: message
+        userMessage: message,
+        modelType: selectedModel
       });
       
       const response = await fetch(webhookUrl, {
@@ -143,7 +195,8 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
         body: JSON.stringify({
           userId: USER_ID,
           sessionId: SESSION_ID,
-          userMessage: message
+          userMessage: message,
+          modelType: selectedModel
         }),
       });
       
@@ -252,9 +305,38 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
   };
 
   const currentSession = sessions.find(s => s.id === currentSessionId);
+  const currentModel = MODEL_THEMES[selectedModel];
 
   return (
     <div className="flex h-screen overflow-hidden bg-chat">
+      <style jsx global>{`
+        :root {
+          --chat-bg: ${currentModel.background};
+          --chat-accent: ${currentModel.accent};
+          --chat-highlight: ${currentModel.highlight};
+          --chat-user-msg: ${currentModel.messageUser};
+          --chat-assistant-msg: ${currentModel.messageAssistant};
+        }
+        .bg-chat {
+          background-color: var(--chat-bg);
+        }
+        .bg-chat-accent {
+          background-color: var(--chat-accent);
+        }
+        .text-chat-highlight {
+          color: var(--chat-highlight);
+        }
+        .bg-chat-assistant {
+          background-color: var(--chat-assistant-msg);
+        }
+        .border-chat-accent {
+          border-color: var(--chat-accent);
+        }
+        .border-chat-assistant {
+          border-color: var(--chat-assistant-msg, #121212);
+        }
+      `}</style>
+
       <ChatSidebar
         sessions={sessions}
         currentSessionId={currentSessionId}
@@ -265,6 +347,7 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
         selectedModel={selectedModel}
         onSelectModel={setSelectedModel}
         onLogout={handleLogout}
+        onViewHistory={() => setIsHistoryOpen(true)}
       />
       
       <div className="flex-1 flex flex-col">
@@ -295,8 +378,17 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
           messages={currentSession?.messages || []}
           onSendMessage={handleSendMessage}
           isLoading={isLoading}
+          modelType={selectedModel}
         />
       </div>
+
+      <HistoryViewer 
+        isOpen={isHistoryOpen} 
+        onOpenChange={setIsHistoryOpen}
+        sessions={sessions}
+        currentSessionId={currentSessionId}
+        onSelectSession={handleSelectSession}
+      />
     </div>
   );
 };

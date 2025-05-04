@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, ChevronLeft, ChevronRight, LogOut } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, LogOut, History } from "lucide-react";
 import BassLogo from "../shared/BassLogo";
 import { ModelType } from "@/types/chat";
 import ModelSelector from "./ModelSelector";
@@ -23,6 +23,7 @@ interface ChatSidebarProps {
   selectedModel: ModelType;
   onSelectModel: (model: ModelType) => void;
   onLogout: () => void;
+  onViewHistory: () => void;
 }
 
 const ChatSidebar = ({
@@ -34,8 +35,14 @@ const ChatSidebar = ({
   onToggleSidebar,
   selectedModel,
   onSelectModel,
-  onLogout
+  onLogout,
+  onViewHistory
 }: ChatSidebarProps) => {
+  // Get most recent sessions for the sidebar (limit to 10)
+  const recentSessions = [...sessions]
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .slice(0, 10);
+
   return (
     <div>
       {/* Overlay for mobile */}
@@ -81,6 +88,18 @@ const ChatSidebar = ({
           </Button>
         </div>
         
+        {/* View History Button */}
+        <div className="p-2 border-b border-chat-assistant">
+          <Button
+            onClick={onViewHistory}
+            variant="outline"
+            className="w-full bg-chat-assistant text-white hover:bg-chat-assistant/80 flex items-center gap-2"
+          >
+            <History className="h-4 w-4" />
+            View History
+          </Button>
+        </div>
+        
         {/* Model Selector */}
         <div className="p-2 border-b border-chat-assistant">
           <ModelSelector
@@ -91,7 +110,7 @@ const ChatSidebar = ({
         
         {/* Chat List */}
         <div className="flex-1 overflow-y-auto p-2">
-          {sessions.map((session) => (
+          {recentSessions.map((session) => (
             <button
               key={session.id}
               onClick={() => onSelectSession(session.id)}
