@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, FileText, Expand, Mail, RefreshCw, BookOpen, Newspaper, ScrollText, X } from "lucide-react";
+import { Copy, FileText, Expand, Mail, RefreshCw, BookOpen, Newspaper, ScrollText, X, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface VideoContent {
@@ -24,6 +24,14 @@ interface VideoContent {
   updated_at: string;
 }
 
+const PANEL_TYPES = [
+  { key: "transcript", label: "Transcript", icon: FileText },
+  { key: "summary", label: "Summary", icon: BookOpen },
+  { key: "blog_post_basic", label: "Blog Post", icon: Newspaper },
+  { key: "email", label: "Email", icon: Mail },
+  { key: "script", label: "Script", icon: ScrollText },
+];
+
 const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
   const [videos, setVideos] = useState<VideoContent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +40,7 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
   const [chatInput, setChatInput] = useState<Record<string, string>>({});
   const [chatLoading, setChatLoading] = useState<Record<string, boolean>>({});
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [openPanels, setOpenPanels] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -120,6 +129,10 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
     setDeletingId(null);
   };
 
+  const togglePanel = (panel: string) => {
+    setOpenPanels((prev) => ({ ...prev, [panel]: !prev[panel] }));
+  };
+
   if (loading) return <div className="text-white">Loading content...</div>;
   if (sortedVideos.length === 0) return <div className="text-white p-4">No content found. Try adding a YouTube URL to get started.</div>;
 
@@ -178,13 +191,30 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
                   <div className="text-xs text-gray-400">{modalVideo.created_at ? new Date(modalVideo.created_at).toLocaleDateString() : ""}</div>
                 </div>
               </div>
-              <div className="mb-2"><b>Transcript:</b> <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">{modalVideo.transcript || "No transcript yet."}</div></div>
-              <div className="mb-2 flex items-center"><b>Summary:</b> <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px] flex-1 ml-2">{modalVideo.summary || "No summary yet."}</div><Button className="ml-2" size="icon" variant="ghost" onClick={() => handleGetSummary(modalVideo)}><RefreshCw size={20} /></Button></div>
-              <div className="mb-2"><b>Blog Post (Basic):</b> <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">{modalVideo.blog_post_basic || "No blog post yet."}</div></div>
-              <div className="mb-2"><b>Blog Post (Premium):</b> <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">{modalVideo.blog_post_premium || "No premium blog post yet."}</div></div>
-              <div className="mb-2"><b>Social IG:</b> <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">{modalVideo.social_ig || "No IG post yet."}</div></div>
-              <div className="mb-2"><b>Email:</b> <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">{modalVideo.email || "No email content yet."}</div></div>
-              <div className="mb-2"><b>Script:</b> <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">{modalVideo.script || "No script yet."}</div></div>
+              {PANEL_TYPES.map(({ key, label, icon: Icon }) => {
+                const hasContent = !!modalVideo[key as keyof typeof modalVideo];
+                return (
+                  <div key={key} className="mb-3 border border-chat-assistant rounded-lg bg-black/40">
+                    <div className="flex items-center px-4 py-3 cursor-pointer" onClick={() => togglePanel(key)}>
+                      <span className={`h-2 w-2 rounded-full mr-3 ${hasContent ? "bg-green-500" : "bg-gray-500"}`}></span>
+                      <Icon size={20} className="text-white mr-2" />
+                      <span className="font-semibold text-white flex-1">{label}</span>
+                      <div className="flex gap-2">
+                        <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); navigator.clipboard.writeText(modalVideo[key] || "");}} disabled={!hasContent}><Copy size={16} /></Button>
+                        <Button size="icon" variant="ghost" className="text-white" disabled><Mail size={16} /></Button>
+                        <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); setOpenPanels(p => ({...p, [key]: true}));}}><Maximize2 size={16} /></Button>
+                        {key === "summary" && <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); handleGetSummary(modalVideo);}}><RefreshCw size={16} /></Button>}
+                      </div>
+                      <span className="ml-2 text-white">{openPanels[key] ? "▼" : "▶"}</span>
+                    </div>
+                    {openPanels[key] && (
+                      <div className="px-4 pb-4 text-white whitespace-pre-line">
+                        {modalVideo[key] || <span className="text-gray-400">No {label.toLowerCase()} yet.</span>}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               <div className="mt-4">
                 <div className="font-bold mb-2">Chat</div>
                 <div className="max-h-64 overflow-y-auto bg-black/10 rounded p-2 mb-2" style={{ minHeight: 80 }}>
