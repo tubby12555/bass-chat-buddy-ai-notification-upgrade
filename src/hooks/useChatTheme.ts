@@ -37,45 +37,17 @@ export const useChatTheme = (selectedModel: ModelType, currentSessionId: string)
     document.documentElement.style.setProperty('--chat-highlight', theme.highlight);
     document.documentElement.style.setProperty('--chat-user-msg', theme.messageUser);
     document.documentElement.style.setProperty('--chat-assistant-msg', theme.messageAssistant);
+    document.documentElement.style.setProperty('--sidebar-bg', theme.background);
+    document.documentElement.style.setProperty('--sidebar-accent', theme.accent);
     
     // Update tailwind classes
     const root = document.documentElement;
     root.style.setProperty('--primary', theme.accent);
-    
-    // Don't return anything here (or return undefined)
   }, [selectedModel]);
 
-  // Fix: This useEffect was incorrectly returning a value instead of a cleanup function
+  // We need to make sure the useEffect doesn't return anything
   useEffect(() => {
-    // Find previous session with current model logic can stay here
-    // But we shouldn't return anything except a cleanup function
-    const checkPreviousSessions = () => {
-      const savedSessions = localStorage.getItem('chatSessions');
-      if (savedSessions) {
-        try {
-          const parsed = JSON.parse(savedSessions);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            const theme = MODEL_THEMES[selectedModel];
-            
-            // Find the last session with this model
-            const lastSessionWithModel = parsed.find(s => 
-              s.messages.some(m => m.content.includes(`Using ${theme.name} model`))
-            );
-            
-            // This is just for checking; we don't return anything from this effect
-            return lastSessionWithModel?.id;
-          }
-        } catch (e) {
-          console.error("Error parsing saved sessions:", e);
-        }
-      }
-      return null;
-    };
-    
-    // Execute the function but don't return its result
-    checkPreviousSessions();
-    
-    // Either return nothing (undefined) or a cleanup function if needed
+    // This is just for any additional side effects
   }, [selectedModel, currentSessionId]);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
