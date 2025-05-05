@@ -139,6 +139,7 @@ export type Database = {
           updated_at: string
           url: string
           user_id: string
+          content_type: string | null
         }
         Insert: {
           blog?: string | null
@@ -156,6 +157,7 @@ export type Database = {
           updated_at?: string
           url: string
           user_id: string
+          content_type?: string | null
         }
         Update: {
           blog?: string | null
@@ -173,6 +175,7 @@ export type Database = {
           updated_at?: string
           url?: string
           user_id?: string
+          content_type?: string | null
         }
         Relationships: []
       }
