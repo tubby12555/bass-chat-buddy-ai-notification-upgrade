@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 interface ContentImage {
   id: string;
   user_id: string;
-  url: string;
+  permanent_url?: string | null;
   content_type?: string | null;
   prompt?: string | null;
   style?: string | null;
@@ -36,7 +36,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
       setLoading(true);
       const { data, error } = await supabase
         .from("content_images")
-        .select("id, user_id, url, content_type, prompt, style, blog, created_at")
+        .select("id, user_id, permanent_url, content_type, prompt, style, blog, created_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
       if (!error && data) setImages(data as ContentImage[]);
@@ -62,8 +62,8 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {filteredImages.map(img => (
             <Card key={img.id} className="bg-chat-assistant rounded-lg shadow-lg cursor-pointer overflow-hidden" onClick={() => setSelectedImage(img)}>
-              {isValidSupabaseUrl(img.url) ? (
-                <img src={img.url!} alt={img.prompt || "Image"} className="w-full h-40 object-cover" />
+              {isValidSupabaseUrl(img.permanent_url) ? (
+                <img src={img.permanent_url!} alt={img.prompt || "Image"} className="w-full h-40 object-cover" />
               ) : (
                 <div className="w-full h-40 flex items-center justify-center bg-gray-800 text-gray-400">No Image</div>
               )}
@@ -81,7 +81,11 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
               <DialogTitle>Image Details</DialogTitle>
             </DialogHeader>
             <div className="flex flex-col gap-4">
-              <img src={selectedImage.url} alt={selectedImage.prompt || "Image"} className="w-full rounded-lg object-contain max-h-80 bg-black" />
+              {isValidSupabaseUrl(selectedImage.permanent_url) ? (
+                <img src={selectedImage.permanent_url!} alt={selectedImage.prompt || "Image"} className="w-full rounded-lg object-contain max-h-80 bg-black" />
+              ) : (
+                <div className="w-full h-40 flex items-center justify-center bg-gray-800 text-gray-400">No Image</div>
+              )}
               <div className="text-white text-sm">
                 <div><span className="font-semibold">Prompt:</span> {selectedImage.prompt || <span className="text-gray-400">None</span>}</div>
                 {selectedImage.style && <div><span className="font-semibold">Style:</span> {selectedImage.style}</div>}
@@ -91,9 +95,11 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
                 )}
               </div>
               <div className="flex gap-2 mt-2">
-                <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(selectedImage.url)}>Copy Image URL</Button>
-                <Button size="sm" variant="outline" onClick={() => window.open(selectedImage.url, "_blank")}>Open</Button>
-                <Button size="sm" variant="outline" onClick={() => { const a = document.createElement('a'); a.href = selectedImage.url; a.download = 'image.jpg'; a.click(); }}>Download</Button>
+                {isValidSupabaseUrl(selectedImage.permanent_url) && <>
+                  <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(selectedImage.permanent_url!)}>Copy Image URL</Button>
+                  <Button size="sm" variant="outline" onClick={() => window.open(selectedImage.permanent_url!, "_blank")}>Open</Button>
+                  <Button size="sm" variant="outline" onClick={() => { const a = document.createElement('a'); a.href = selectedImage.permanent_url!; a.download = 'image.jpg'; a.click(); }}>Download</Button>
+                </>}
               </div>
             </div>
           </DialogContent>

@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
 
     // Update DB row
     const updateFields: Record<string, string | null> = {
-      url: publicUrl,
+      permanent_url: publicUrl,
       bucket: 'user images',
       path: storagePath,
     };
