@@ -34,15 +34,7 @@ export type Database = {
           order_num?: number | null
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "categories_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       content: {
         Row: {
@@ -75,15 +67,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "content_summary_id_fkey"
-            columns: ["summary_id"]
-            isOneToOne: false
-            referencedRelation: "summaries"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       content_images: {
         Row: {
@@ -247,13 +231,6 @@ export type Database = {
             referencedRelation: "categories"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "images_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
         ]
       }
       media: {
@@ -335,15 +312,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "notes_content_id_fkey"
-            columns: ["content_id"]
-            isOneToOne: false
-            referencedRelation: "content"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -410,35 +379,36 @@ export type Database = {
           created_at: string
           id: string
           json: Json
+          summary: string | null
           transcript_id: string | null
           updated_at: string
           user_id: string
+          video_id: string | null
+          video_url: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           json: Json
+          summary?: string | null
           transcript_id?: string | null
           updated_at?: string
           user_id: string
+          video_id?: string | null
+          video_url?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           json?: Json
+          summary?: string | null
           transcript_id?: string | null
           updated_at?: string
           user_id?: string
+          video_id?: string | null
+          video_url?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "summaries_transcript_id_fkey"
-            columns: ["transcript_id"]
-            isOneToOne: false
-            referencedRelation: "transcripts"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       transcripts: {
         Row: {
@@ -448,6 +418,8 @@ export type Database = {
           text: string
           updated_at: string
           user_id: string
+          video_id: string | null
+          video_url: string | null
         }
         Insert: {
           created_at?: string
@@ -456,6 +428,8 @@ export type Database = {
           text: string
           updated_at?: string
           user_id: string
+          video_id?: string | null
+          video_url?: string | null
         }
         Update: {
           created_at?: string
@@ -464,6 +438,8 @@ export type Database = {
           text?: string
           updated_at?: string
           user_id?: string
+          video_id?: string | null
+          video_url?: string | null
         }
         Relationships: []
       }

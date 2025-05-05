@@ -53,9 +53,17 @@ const AuthForm = ({ onAuthSuccess }: AuthFormProps) => {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      // First sign up the user
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+            profession: profession,  // Store profession in metadata too
+          }
+        }
       });
 
       if (error) throw error;
@@ -95,6 +103,7 @@ const AuthForm = ({ onAuthSuccess }: AuthFormProps) => {
           });
         }
       }
+
       toast({
         title: "Sign up successful",
         description: "Please check your email for a confirmation link",
@@ -204,7 +213,6 @@ const AuthForm = ({ onAuthSuccess }: AuthFormProps) => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  autoFocus
                   className="bg-chat-assistant text-white"
                 />
               </div>
