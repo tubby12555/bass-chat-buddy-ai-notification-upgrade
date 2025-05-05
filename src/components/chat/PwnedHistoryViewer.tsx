@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -15,10 +14,8 @@ interface PwnedChatData {
   id: string;
   user_id: string;
   session_id: string;
-  message: string;
-  role: "user" | "assistant" | "system";
-  metadata: any;
-  created_at: string;
+  content: string;
+  model_type: string;
 }
 
 interface PwnedHistoryViewerProps {
@@ -41,6 +38,25 @@ const PwnedHistoryViewer = ({
   useEffect(() => {
     if (isOpen && userId) {
       fetchPwnedChatData();
+      // Realtime subscription
+      const channel = supabase
+        .channel('pwned_chat_data_realtime')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'pwned_chat_data',
+            filter: `user_id=eq.${userId}`
+          },
+          () => {
+            fetchPwnedChatData();
+          }
+        )
+        .subscribe();
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [isOpen, userId]);
 
@@ -50,8 +66,7 @@ const PwnedHistoryViewer = ({
       const { data, error } = await supabase
         .from('pwned_chat_data')
         .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: true });
+        .eq('user_id', userId);
 
       if (error) {
         console.error("Error fetching pwned chat data:", error);
@@ -66,16 +81,10 @@ const PwnedHistoryViewer = ({
       // Group messages by session_id
       const groupedSessions: Record<string, PwnedChatData[]> = {};
       data.forEach(message => {
-        // Cast the role string to the correct type
-        const typedMessage = {
-          ...message,
-          role: message.role as "user" | "assistant" | "system"
-        };
-        
-        if (!groupedSessions[typedMessage.session_id]) {
-          groupedSessions[typedMessage.session_id] = [];
+        if (!groupedSessions[message.session_id]) {
+          groupedSessions[message.session_id] = [];
         }
-        groupedSessions[typedMessage.session_id].push(typedMessage);
+        groupedSessions[message.session_id].push(message);
       });
 
       setSessions(groupedSessions);
@@ -97,7 +106,7 @@ const PwnedHistoryViewer = ({
     const sessionData = sessions[sessionId];
     if (sessionData) {
       const text = sessionData.map(msg => 
-        `${msg.role === 'user' ? 'You' : 'Assistant'}: ${msg.message}`
+        `Model: ${msg.model_type} | Content: ${msg.content}`
       ).join('\n\n');
       
       navigator.clipboard.writeText(text).then(() => {
@@ -152,18 +161,22 @@ const PwnedHistoryViewer = ({
 
                       <ScrollArea className="h-[calc(80vh-10rem)] w-full">
                         <div className="space-y-6 p-4">
-                          {sessions[sessionId].map((message) => (
-                            <MessageBubble 
-                              key={message.id}
-                              message={{
-                                id: message.id,
-                                role: message.role,
-                                content: message.message,
-                                timestamp: new Date(message.created_at).getTime()
-                              }}
-                              modelType="pwned"
-                            />
-                          ))}
+                          {sessions[sessionId].map((message) => {
+                            const timestamp = message.timestamp ? message.timestamp : Date.now();
+                            return (
+                              <div key={message.id}>
+                                <MessageBubble
+                                  message={{
+                                    id: message.id,
+                                    role: "assistant",
+                                    content: message.content,
+                                    timestamp
+                                  }}
+                                  modelType={message.model_type}
+                                />
+                              </div>
+                            );
+                          })}
                         </div>
                       </ScrollArea>
                     </div>
