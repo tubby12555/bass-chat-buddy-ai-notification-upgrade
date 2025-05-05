@@ -1,4 +1,3 @@
-
 import { useToast } from "@/components/ui/use-toast";
 import { ModelType } from "@/types/chat";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,7 +27,7 @@ export const sendMessage = async (
         content: message,
         model_type: modelType
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error saving user message to database:", error);
     }
   }
@@ -50,36 +49,41 @@ export const sendMessage = async (
     throw new Error(`Server responded with ${response.status}`);
   }
   
-  const data = await response.json();
+  const text = await response.text();
+  const data: unknown = text ? JSON.parse(text) : {};
   console.log("Received response from webhook:", data);
   
+  // Type guards
+  function isArrayOfObjects(val: unknown): val is Array<Record<string, unknown>> {
+    return Array.isArray(val) && val.every(item => typeof item === 'object' && item !== null);
+  }
+  function isObject(val: unknown): val is Record<string, unknown> {
+    return typeof val === 'object' && val !== null && !Array.isArray(val);
+  }
+
   // Handle different response formats from n8n
   let assistantMessage = "";
   
-  if (Array.isArray(data) && data.length > 0) {
-    // If data is an array, take the first item's output or content
-    if (data[0].output) {
-      assistantMessage = data[0].output;
-    } else if (data[0].content) {
-      assistantMessage = data[0].content;
-    } else if (data[0].reply) {
-      assistantMessage = data[0].reply;
-    } else if (typeof data[0] === 'string') {
-      assistantMessage = data[0];
+  if (isArrayOfObjects(data) && data.length > 0) {
+    const first = data[0];
+    if ('output' in first && typeof first.output === 'string') {
+      assistantMessage = first.output;
+    } else if ('content' in first && typeof first.content === 'string') {
+      assistantMessage = first.content;
+    } else if ('reply' in first && typeof first.reply === 'string') {
+      assistantMessage = first.reply;
+    } else if (typeof first === 'string') {
+      assistantMessage = first;
     } else {
-      assistantMessage = JSON.stringify(data[0]);
+      assistantMessage = JSON.stringify(first);
     }
-  } else if (data.output) {
-    // Direct output property
+  } else if (isObject(data) && 'output' in data && typeof data.output === 'string') {
     assistantMessage = data.output;
-  } else if (data.reply) {
-    // Direct reply property
+  } else if (isObject(data) && 'reply' in data && typeof data.reply === 'string') {
     assistantMessage = data.reply;
   } else if (typeof data === 'string') {
-    // Direct string response
     assistantMessage = data;
   } else {
-    // Fallback: stringify the entire response
     assistantMessage = JSON.stringify(data);
   }
   
@@ -92,7 +96,7 @@ export const sendMessage = async (
         content: assistantMessage,
         model_type: modelType
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error saving assistant message to database:", error);
     }
   }
