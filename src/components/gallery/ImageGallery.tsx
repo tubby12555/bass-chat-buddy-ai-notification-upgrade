@@ -39,6 +39,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
   const fetchImages = useCallback(async () => {
     setLoading(true);
     try {
+      console.log("Fetching images for user", userId);
       const { data, error } = await supabase
         .from("content_images")
         .select("id, user_id, permanent_url, content_type, prompt, style, blog, created_at")
@@ -53,8 +54,10 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
           variant: "destructive"
         });
       } else if (data) {
+        console.log("Fetched images:", data.length);
         // Filter out images with invalid permanent_url
         const validImages = data.filter(img => isValidSupabaseUrl(img.permanent_url));
+        console.log("Valid images:", validImages.length);
         setImages(validImages as ContentImage[]);
       }
     } catch (err) {
@@ -67,6 +70,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
   // Check for pending images that need processing
   const checkPendingImages = useCallback(async () => {
     try {
+      console.log("Checking for pending images...");
       const { count, error } = await supabase
         .from("content_images")
         .select("id", { count: 'exact', head: true })
@@ -75,6 +79,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
         .not("temp_url", "is", null);
       
       if (!error && count && count > 0) {
+        console.log(`Found ${count} pending images`);
         return count;
       }
       return 0;
@@ -88,15 +93,20 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
   const processImages = useCallback(async () => {
     const pendingCount = await checkPendingImages();
     
-    if (pendingCount === 0) return;
+    if (pendingCount === 0) {
+      console.log("No pending images to process");
+      return;
+    }
     
+    console.log(`Processing ${pendingCount} pending images...`);
     setProcessingImages(true);
     try {
       // Log event
       await logEventToSupabase(userId, 'process_images', { count: pendingCount });
       
       // Call the edge function to process images
-      const { error } = await supabase.functions.invoke('image-processor');
+      console.log("Invoking image-processor function");
+      const { data, error } = await supabase.functions.invoke('image-processor');
       
       if (error) {
         console.error("Error calling image processor:", error);
@@ -106,6 +116,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
           variant: "destructive"
         });
       } else {
+        console.log("Image processor response:", data);
         toast({
           title: "Images Processed",
           description: "Your images have been processed successfully.",
@@ -122,6 +133,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
 
   useEffect(() => {
     if (userId) {
+      console.log("Component mounted, fetching images...");
       fetchImages();
       // Automatically process images when component mounts
       processImages(); 
@@ -130,6 +142,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
 
   // Set up a subscription for real-time updates
   useEffect(() => {
+    console.log("Setting up real-time subscription");
     const channel = supabase
       .channel('content-images-changes')
       .on(
@@ -150,6 +163,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
       .subscribe();
 
     return () => {
+      console.log("Cleaning up real-time subscription");
       supabase.removeChannel(channel);
     };
   }, [userId, fetchImages, processImages]);
@@ -157,6 +171,11 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
   const filteredImages = tab === "all" 
     ? images 
     : images.filter(img => img.content_type === tab);
+
+  console.log("Rendering with filtered images:", filteredImages.length);
+  console.log("Current tab:", tab);
+  console.log("Loading state:", loading);
+  console.log("Processing state:", processingImages);
 
   return (
     <div className="p-2">
@@ -168,26 +187,26 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
         filteredImages={filteredImages}
       />
       
-      {loading && (
+      {(loading || processingImages) && (
         <div className="flex justify-center items-center py-20">
           <div className="animate-pulse text-white flex items-center">
             <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            Processing images...
+            {processingImages ? "Processing images..." : "Loading images..."}
           </div>
         </div>
       )}
       
-      {!loading && filteredImages.length > 0 && (
+      {!loading && !processingImages && filteredImages.length > 0 && (
         <ImageGrid 
           images={filteredImages}
           onSelectImage={setSelectedImage}
         />
       )}
       
-      {!loading && filteredImages.length === 0 && (
+      {!loading && !processingImages && filteredImages.length === 0 && (
         <div className="text-white p-8 text-center bg-chat-assistant/30 rounded-lg">
           <p className="text-xl font-medium mb-2">No images found</p>
           <p className="text-gray-400">

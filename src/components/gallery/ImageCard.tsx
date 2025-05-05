@@ -24,6 +24,20 @@ const isValidSupabaseUrl = (url: string | null | undefined): boolean => {
 };
 
 const ImageCard: React.FC<ImageCardProps> = ({ image, onClick }) => {
+  const [imageLoaded, setImageLoaded] = React.useState(false);
+  const [imageError, setImageError] = React.useState(false);
+
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+    setImageError(false);
+  };
+
+  const handleImageError = () => {
+    setImageError(true);
+    setImageLoaded(false);
+    console.error(`Failed to load image: ${image.permanent_url}`);
+  };
+
   return (
     <Card 
       key={image.id} 
@@ -32,12 +46,30 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, onClick }) => {
     >
       <div className="aspect-square relative">
         {isValidSupabaseUrl(image.permanent_url) ? (
-          <img 
-            src={image.permanent_url!} 
-            alt={image.prompt || "Generated image"} 
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
+          <>
+            {!imageLoaded && !imageError && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                <div className="animate-pulse">
+                  <Image size={32} className="text-gray-600" />
+                </div>
+              </div>
+            )}
+            
+            {imageError && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                <Image size={32} className="text-gray-600" />
+              </div>
+            )}
+            
+            <img 
+              src={image.permanent_url!} 
+              alt={image.prompt || "Generated image"} 
+              className={`w-full h-full object-cover ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+              loading="lazy"
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+            />
+          </>
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gray-800 text-gray-400">
             <Image size={32} />

@@ -18,19 +18,26 @@ serve(async (req) => {
   }
 
   try {
+    console.log("Image processor function started");
+    
     // Initialize Supabase client with service role key
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Get pending images that need processing (either temp_url or base64_image)
+    // Get pending images that need processing
+    console.log("Fetching pending images...");
     const { data: pendingImages, error: fetchError } = await supabase
       .from('content_images')
       .select('id, user_id, temp_url, base64_image, content_type')
-      .or('permanent_url.is.null,temp_url.is.not.null')
+      .is('permanent_url', null)
+      .not('temp_url', 'is', null)
       .limit(10);
 
     if (fetchError) {
+      console.error("Error fetching pending images:", fetchError);
       throw fetchError;
     }
+
+    console.log(`Found ${pendingImages?.length || 0} pending images to process`);
 
     if (!pendingImages || pendingImages.length === 0) {
       return new Response(
@@ -44,12 +51,14 @@ serve(async (req) => {
     // Process each pending image
     for (const image of pendingImages) {
       try {
+        console.log(`Processing image ${image.id}`);
         let imageBuffer: ArrayBuffer;
         let contentType = 'image/png';
         let ext = 'png';
         
         // Get image data from temp_url
         if (image.temp_url) {
+          console.log(`Fetching from temp_url: ${image.temp_url}`);
           const res = await fetch(image.temp_url);
           if (!res.ok) {
             results.push({ id: image.id, success: false, error: 'Failed to fetch temp URL' });
@@ -61,6 +70,7 @@ serve(async (req) => {
           if (ct) contentType = ct;
           if (ct && ct.includes('jpeg')) ext = 'jpg';
         } else if (image.base64_image) {
+          console.log(`Processing base64 image for ${image.id}`);
           const matches = image.base64_image.match(/^data:(image\/\w+);base64,(.+)$/);
           if (!matches) {
             results.push({ id: image.id, success: false, error: 'Invalid base64 image' });
@@ -78,6 +88,8 @@ serve(async (req) => {
         const fileName = `image-${image.id}.${ext}`;
         const storagePath = `${image.user_id}/${image.id}/${fileName}`;
         
+        console.log(`Uploading to storage: ${storagePath}`);
+        
         // Upload to storage
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('user_images')
@@ -87,6 +99,7 @@ serve(async (req) => {
           });
         
         if (uploadError) {
+          console.error("Storage upload failed:", uploadError);
           results.push({ id: image.id, success: false, error: 'Storage upload failed' });
           continue;
         }
@@ -97,6 +110,7 @@ serve(async (req) => {
           .getPublicUrl(storagePath);
           
         const publicUrl = publicUrlData?.publicUrl;
+        console.log(`Got public URL: ${publicUrl}`);
         
         // Update database record
         const updateFields: Record<string, string | null> = {
@@ -108,22 +122,27 @@ serve(async (req) => {
         if (image.temp_url) updateFields.temp_url = null;
         if (image.base64_image) updateFields.base64_image = null;
         
+        console.log(`Updating database record for ${image.id}`);
         const { error: updateError } = await supabase
           .from('content_images')
           .update(updateFields)
           .eq('id', image.id);
         
         if (updateError) {
+          console.error("Database update failed:", updateError);
           results.push({ id: image.id, success: false, error: 'Database update failed' });
           continue;
         }
         
         results.push({ id: image.id, success: true, publicUrl });
+        console.log(`Successfully processed image ${image.id}`);
       } catch (err) {
+        console.error(`Error processing image ${image.id}:`, err);
         results.push({ id: image.id, success: false, error: err.message });
       }
     }
 
+    console.log(`Processed ${results.filter(r => r.success).length}/${pendingImages.length} images`);
     return new Response(
       JSON.stringify({ 
         message: `Processed ${results.filter(r => r.success).length}/${pendingImages.length} images`,

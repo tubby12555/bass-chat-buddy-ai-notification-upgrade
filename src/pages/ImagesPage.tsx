@@ -21,6 +21,7 @@ const ImagesPage: React.FC = () => {
       try {
         const { data } = await supabase.auth.getUser();
         setUserId(data?.user?.id || null);
+        console.log("User authenticated:", !!data?.user);
       } catch (error) {
         console.error("Error fetching user:", error);
       } finally {
@@ -35,6 +36,7 @@ const ImagesPage: React.FC = () => {
     
     setIsProcessing(true);
     try {
+      console.log("Manual process images triggered");
       // Log event
       await logEventToSupabase(userId, 'manual_process_images', {});
       
