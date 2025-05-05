@@ -79,6 +79,15 @@ const ChatSidebar = ({
     }
   };
 
+  // Handler for tool clicks from ToolsSection
+  const handleSidebarToolClick = (tool: string) => {
+    if (tool === "youtube") {
+      setIsYouTubeModalOpen(true);
+      return;
+    }
+    if (onToolClick) onToolClick(tool);
+  };
+
   return (
     <div>
       <MobileOverlay isOpen={isOpen} onClose={onToggleSidebar} />
@@ -110,10 +119,10 @@ const ChatSidebar = ({
         />
         
         {/* Tools Section */}
-        <ToolsSection onToolClick={onToolClick} />
+        <ToolsSection onToolClick={handleSidebarToolClick} />
         
         {/* Settings Section */}
-        <SettingsSection onToolClick={onToolClick} />
+        <SettingsSection onToolClick={onToolClick || (() => {})} />
         
         {/* Sign Out button remains at the bottom */}
         <div className="mt-auto border-t border-chat-assistant">
