@@ -629,6 +629,8 @@ export type Database = {
           session_id?: string | null;
           video_url: string;
           video_id?: string | null;
+          title?: string | null;
+          thumbnail_url?: string | null;
           transcript?: string | null;
           summary?: string | null;
           blog_post_basic?: string | null;
@@ -645,6 +647,8 @@ export type Database = {
           session_id?: string | null;
           video_url: string;
           video_id?: string | null;
+          title?: string | null;
+          thumbnail_url?: string | null;
           transcript?: string | null;
           summary?: string | null;
           blog_post_basic?: string | null;
@@ -661,6 +665,8 @@ export type Database = {
           session_id?: string | null;
           video_url?: string;
           video_id?: string | null;
+          title?: string | null;
+          thumbnail_url?: string | null;
           transcript?: string | null;
           summary?: string | null;
           blog_post_basic?: string | null;
