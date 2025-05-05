@@ -1,164 +1,176 @@
 
-import React, { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/components/ui/use-toast";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatDistanceToNow } from "date-fns";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
 
 interface PwnedHistoryViewerProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
   userId: string;
+  onSelectSession: (sessionId: string, content: string) => void;
+  currentSessionId: string | null;
 }
 
-// TypeScript interface for our data structure
-interface PwnedItem {
+interface PwnedChatData {
   id: string;
-  content: string;
   user_id: string;
+  content: string;
   session_id: string;
-  model_type: string;
-  created_at: string; // Make created_at required
+  model_type: string | null;
+  created_at?: string; // Make created_at optional
 }
 
-const PwnedHistoryViewer = ({ isOpen, onOpenChange, userId }: PwnedHistoryViewerProps) => {
-  const [history, setHistory] = useState<PwnedItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
+const PwnedHistoryViewer: React.FC<PwnedHistoryViewerProps> = ({
+  userId,
+  onSelectSession,
+  currentSessionId,
+}) => {
+  const [sessions, setSessions] = useState<Record<string, PwnedChatData[]>>({});
+  const [loading, setLoading] = useState(true);
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      loadHistory();
-    }
-  }, [isOpen, userId]);
+    const fetchSessions = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("pwned_chat_data")
+          .select("*")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false });
 
-  const loadHistory = async () => {
-    if (!userId) return;
-    
-    setLoading(true);
-    try {
-      // Use a custom SQL query to get the data directly
-      const { data, error } = await supabase
-        .from('pwned_chat_data') // Use a table that we know exists
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        throw error;
+        if (error) {
+          console.error("Error fetching sessions:", error);
+          return;
+        }
+
+        // Group by session_id
+        const groupedSessions: Record<string, PwnedChatData[]> = {};
+        data.forEach((item: PwnedChatData) => {
+          if (!groupedSessions[item.session_id]) {
+            groupedSessions[item.session_id] = [];
+          }
+          groupedSessions[item.session_id].push(item);
+        });
+
+        setSessions(groupedSessions);
+      } finally {
+        setLoading(false);
       }
-      
-      // Map the data to match our PwnedItem interface
-      const processedData: PwnedItem[] = (data || []).map(item => ({
-        id: item.id || '',
-        content: item.content || '',
-        user_id: item.user_id || userId,
-        session_id: item.session_id || '',
-        model_type: item.model_type || '',
-        created_at: item.created_at || new Date().toISOString()
-      }));
-      
-      setHistory(processedData);
-    } catch (error) {
-      console.error('Error loading pwned history:', error);
-      toast({
-        title: "Error",
-        description: "Could not load history",
-        variant: "destructive"
-      });
+    };
+
+    if (userId) {
+      fetchSessions();
+    }
+  }, [userId]);
+
+  const handleDeleteSession = async () => {
+    if (!sessionToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from("pwned_chat_data")
+        .delete()
+        .eq("session_id", sessionToDelete);
+
+      if (error) {
+        console.error("Error deleting session:", error);
+        return;
+      }
+
+      // Remove session from state
+      const newSessions = { ...sessions };
+      delete newSessions[sessionToDelete];
+      setSessions(newSessions);
+
+      // If the deleted session was the current one, reset
+      if (sessionToDelete === currentSessionId) {
+        onSelectSession("", "");
+      }
     } finally {
-      setLoading(false);
+      setSessionToDelete(null);
     }
   };
 
-  // Group items by session_id
-  const groupedHistory = history.reduce((acc, item) => {
-    if (!acc[item.session_id]) {
-      acc[item.session_id] = [];
-    }
-    acc[item.session_id].push(item);
-    return acc;
-  }, {} as Record<string, PwnedItem[]>);
-
-  // Convert to array and sort by most recent
-  const sessions = Object.entries(groupedHistory)
-    .map(([sessionId, items]) => ({
-      sessionId,
-      items,
-      // Find the most recent item in the session
-      lastActivity: new Date(
-        Math.max(...items.map(item => new Date(item.created_at).getTime()))
-      )
-    }))
-    .sort((a, b) => b.lastActivity.getTime() - a.lastActivity.getTime());
-
-  // Format date for display
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
+  const getSessionPreview = (sessionData: PwnedChatData[]) => {
+    const firstMessage = sessionData[0]?.content || "Empty session";
+    return firstMessage.slice(0, 50) + (firstMessage.length > 50 ? "..." : "");
   };
+
+  const getSessionTime = (sessionData: PwnedChatData[]) => {
+    // Use optional chaining to handle missing created_at
+    const timestamp = sessionData[0]?.created_at;
+    if (!timestamp) return "Unknown time";
+    
+    try {
+      return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Invalid date";
+    }
+  };
+
+  if (loading) {
+    return <div className="text-gray-400 text-center p-4">Loading sessions...</div>;
+  }
+
+  const sessionIds = Object.keys(sessions);
+  if (sessionIds.length === 0) {
+    return <div className="text-gray-400 text-center p-4">No previous sessions found.</div>;
+  }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>Pwned History</DialogTitle>
-        </DialogHeader>
-        
-        <Tabs defaultValue="sessions">
-          <TabsList className="grid grid-cols-2">
-            <TabsTrigger value="sessions">Sessions</TabsTrigger>
-            <TabsTrigger value="queries">Queries</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="sessions" className="min-h-[400px]">
-            {loading ? (
-              <div className="flex items-center justify-center h-80">
-                <p>Loading history...</p>
-              </div>
-            ) : sessions.length === 0 ? (
-              <div className="flex items-center justify-center h-80">
-                <p>No pwned history found</p>
-              </div>
-            ) : (
-              <ScrollArea className="h-[400px] pr-4">
-                {sessions.map(session => (
-                  <div key={session.sessionId} className="mb-6">
-                    <h3 className="text-lg font-medium mb-2">
-                      Session {session.sessionId.substring(0, 8)}...
-                      <span className="text-sm font-normal text-muted-foreground ml-2">
-                        {formatDate(session.lastActivity)}
-                      </span>
-                    </h3>
-                    
-                    {session.items.map(item => (
-                      <div key={item.id} className="rounded-md border p-3 mb-3">
-                        <p className="whitespace-pre-wrap text-sm">{item.content}</p>
-                      </div>
-                    ))}
-                    
-                    <Separator />
-                  </div>
-                ))}
-              </ScrollArea>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="queries" className="min-h-[400px]">
-            <div className="flex items-center justify-center h-80">
-              <p>SQL query history will be shown here</p>
+    <div className="space-y-2 pb-4">
+      {sessionIds.map((sessionId) => (
+        <div
+          key={sessionId}
+          className={`p-3 rounded cursor-pointer text-sm transition-colors ${
+            sessionId === currentSessionId
+              ? "bg-chat-accent/40 text-white"
+              : "hover:bg-chat-accent/20 text-gray-300"
+          }`}
+        >
+          <div
+            className="flex justify-between items-start"
+            onClick={() => onSelectSession(sessionId, sessions[sessionId][0]?.content || "")}
+          >
+            <div>
+              <div className="font-medium">{getSessionPreview(sessions[sessionId])}</div>
+              <div className="text-xs text-gray-400 mt-1">{getSessionTime(sessions[sessionId])}</div>
             </div>
-          </TabsContent>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 rounded-full opacity-60 hover:opacity-100 hover:bg-red-500/20"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSessionToDelete(sessionId);
+                  }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span className="sr-only">Delete</span>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Session</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this session? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteSession}>Delete</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+      ))}
+    </div>
   );
 };
 

@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import ContentPage from "./pages/ContentPage";
+import ImagesPage from "./pages/ImagesPage";
 import { useToast } from "@/components/ui/use-toast";
 
 const queryClient = new QueryClient();
@@ -109,6 +110,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Index isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} />} />
             <Route path="/content" element={<ContentPage />} />
+            <Route path="/images" element={<ImagesPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

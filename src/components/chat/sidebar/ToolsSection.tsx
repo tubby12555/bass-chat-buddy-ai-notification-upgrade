@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, Youtube, FileText, Image, FolderOpen, Calendar } from "lucide-react";
@@ -14,6 +15,11 @@ const ToolsSection = ({ onToolClick }: ToolsSectionProps) => {
   const handleToolClick = (tool: string) => {
     if (tool === "content") {
       navigate("/content");
+      return;
+    }
+    
+    if (tool === "images") {
+      navigate("/images");
       return;
     }
     

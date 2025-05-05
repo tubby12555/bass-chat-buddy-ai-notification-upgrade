@@ -125,56 +125,62 @@ export type Database = {
       content_images: {
         Row: {
           blog: string | null
-          bucket: string
+          bucket: string | null
           content_type: string | null
           created_at: string
           email: string | null
           id: string
           metadata: Json | null
-          path: string
+          path: string | null
+          permanent_url: string | null
           prompt: string | null
           script: string | null
           style: string | null
           summary: string | null
+          temp_url: string | null
           uncategorized: string | null
           updated_at: string
-          url: string
+          url: string | null
           user_id: string
         }
         Insert: {
           blog?: string | null
-          bucket: string
+          bucket?: string | null
           content_type?: string | null
           created_at?: string
           email?: string | null
           id?: string
           metadata?: Json | null
-          path: string
+          path?: string | null
+          permanent_url?: string | null
           prompt?: string | null
           script?: string | null
           style?: string | null
           summary?: string | null
+          temp_url?: string | null
           uncategorized?: string | null
           updated_at?: string
-          url: string
+          url?: string | null
           user_id: string
         }
         Update: {
           blog?: string | null
-          bucket?: string
+          bucket?: string | null
           content_type?: string | null
           created_at?: string
           email?: string | null
           id?: string
           metadata?: Json | null
-          path?: string
+          path?: string | null
+          permanent_url?: string | null
           prompt?: string | null
           script?: string | null
           style?: string | null
           summary?: string | null
+          temp_url?: string | null
           uncategorized?: string | null
           updated_at?: string
-          url?: string
+          url?: string | null
           user_id?: string
         }
         Relationships: []
