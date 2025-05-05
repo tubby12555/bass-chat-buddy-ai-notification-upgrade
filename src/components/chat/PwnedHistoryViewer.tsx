@@ -85,9 +85,10 @@ const PwnedHistoryViewer = ({
 
       if (error) throw error;
 
-      // Ensure all required properties are present
+      // Make sure all objects have the required properties
       const processedData = data.map(item => ({
         ...item,
+        id: item.id || uuidv4(),
         created_at: item.created_at || new Date().toISOString()
       })) as PwnedChatData[];
 
