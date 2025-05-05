@@ -5,328 +5,185 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Copy, FileText, Expand, Mail, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-interface ContentSectionProps {
-  userId: string;
-}
-
-interface Summary {
+interface VideoContent {
   id: string;
-  video_url: string | null;
-  video_id: string | null;
-  summary: string | null;
+  user_id: string;
+  session_id?: string;
+  video_url: string;
+  video_id?: string;
+  transcript?: string;
+  summary?: string;
+  blog_post_basic?: string;
+  blog_post_premium?: string;
+  social_ig?: string;
+  email?: string;
+  script?: string;
   created_at: string;
+  updated_at: string;
 }
 
-interface Transcript {
-  id: string;
-  video_url: string | null;
-  video_id: string | null;
-  transcript: string | null;
-  created_at: string;
-}
-
-interface BlogPost {
-  id: string;
-  video_url: string | null;
-  video_id: string | null;
-  content: string | null;
-  created_at: string;
-}
-
-interface EmailContent {
-  id: string;
-  video_url: string | null;
-  video_id: string | null;
-  content: string | null;
-  created_at: string;
-}
-
-interface Script {
-  id: string;
-  video_url: string | null;
-  video_id: string | null;
-  content: string | null;
-  created_at: string;
-}
-
-function isValidSummary(item: unknown): item is Summary {
-  if (typeof item !== 'object' || item === null) return false;
-  const obj = item as Record<string, unknown>;
-  return (
-    'id' in obj &&
-    'video_url' in obj &&
-    'video_id' in obj &&
-    'summary' in obj &&
-    'created_at' in obj
-  );
-}
-
-function isValidTranscript(item: unknown): item is Transcript {
-  if (typeof item !== 'object' || item === null) return false;
-  const obj = item as Record<string, unknown>;
-  return (
-    'id' in obj &&
-    'video_url' in obj &&
-    'video_id' in obj &&
-    'transcript' in obj &&
-    'created_at' in obj
-  );
-}
-
-// Ensure we have created_at field in all data objects
-type WithCreatedAt<T> = T & { created_at: string };
-const ensureCreatedAt = <T extends { created_at?: string }>(data: T[]): WithCreatedAt<T>[] => {
-  return data.map(item => {
-    if (!('created_at' in item) || !item.created_at) {
-      return { ...item, created_at: new Date().toISOString() } as WithCreatedAt<T>;
-    }
-    return item as WithCreatedAt<T>;
-  });
-};
-
-const ContentSection: React.FC<ContentSectionProps> = ({ userId }) => {
-  const [summaries, setSummaries] = useState<Summary[]>([]);
-  const [transcripts, setTranscripts] = useState<Transcript[]>([]);
-  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
-  const [emailContent, setEmailContent] = useState<EmailContent[]>([]);
-  const [scripts, setScripts] = useState<Script[]>([]);
+const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
+  const [videos, setVideos] = useState<VideoContent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [schemaError, setSchemaError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("content");
+  const [chatMessages, setChatMessages] = useState<Record<string, { role: string; content: string }[]>>({});
+  const [chatInput, setChatInput] = useState<Record<string, string>>({});
+  const [chatLoading, setChatLoading] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      setSchemaError(null);
-      
-      // Fetch summaries
-      const { data: summariesData, error: summariesError } = await supabase
-        .from("summaries")
-        .select("id, video_url, video_id, summary, created_at")
+      const { data, error } = await supabase
+        .from("video_content")
+        .select("*")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
-      
-      if (summariesError && summariesError.message.includes("column 'video_url' does not exist")) {
-        setSchemaError("Your database schema is not up to date. Please run the latest migrations for 'summaries'.");
-        setSummaries([]);
-      } else if (
-        !summariesError &&
-        Array.isArray(summariesData)
-      ) {
-        const validatedData = ensureCreatedAt(summariesData);
-        setSummaries(validatedData as Summary[]);
-      } else {
-        setSummaries([]);
-      }
-      
-      // Fetch transcripts
-      const { data: transcriptsData, error: transcriptsError } = await supabase
-        .from("transcripts")
-        .select("id, video_url, video_id, transcript, created_at")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-      
-      if (transcriptsError && transcriptsError.message.includes("column 'video_url' does not exist")) {
-        setSchemaError("Your database schema is not up to date. Please run the latest migrations for 'transcripts'.");
-        setTranscripts([]);
-      } else if (
-        !transcriptsError &&
-        Array.isArray(transcriptsData)
-      ) {
-        const validatedData = ensureCreatedAt(transcriptsData);
-        setTranscripts(validatedData as Transcript[]);
-      } else {
-        setTranscripts([]);
-      }
-
-      // In a real implementation, we would also fetch blog posts, email content, and scripts
-      // For now, we'll just initialize them as empty arrays
-      setBlogPosts([]);
-      setEmailContent([]);
-      setScripts([]);
-      
+      if (!error && data) setVideos(data as VideoContent[]);
       setLoading(false);
     };
-    
     if (userId && userId !== "anonymous") fetchData();
-
-    // --- Supabase realtime subscriptions ---
-    if (userId && userId !== "anonymous") {
-      const channel = supabase.channel('content-realtime');
-      // Listen for INSERT/UPDATE on summaries
-      channel.on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'summaries',
-        filter: `user_id=eq.${userId}`,
-      }, (payload) => {
-        fetchData();
-      });
-      // Listen for INSERT/UPDATE on transcripts
-      channel.on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'transcripts',
-        filter: `user_id=eq.${userId}`,
-      }, (payload) => {
-        fetchData();
-      });
-      channel.subscribe();
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
   }, [userId]);
 
-  // Add handler for Get Summary
-  const handleGetSummary = async (videoId: string, videoUrl: string) => {
+  const handleGetSummary = async (video: VideoContent) => {
+    await fetch("https://n8n.srv728397.hstgr.cloud/webhook/gemini", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId,
+        videoId: video.video_id,
+        videoUrl: video.video_url,
+        contentType: "summary"
+      })
+    });
+  };
+
+  const handleChatSend = async (video: VideoContent) => {
+    const message = chatInput[video.id]?.trim();
+    if (!message) return;
+    setChatLoading((prev) => ({ ...prev, [video.id]: true }));
+    setChatMessages((prev) => ({
+      ...prev,
+      [video.id]: [...(prev[video.id] || []), { role: "user", content: message }]
+    }));
+    setChatInput((prev) => ({ ...prev, [video.id]: "" }));
     try {
-      await fetch("https://n8n.srv728397.hstgr.cloud/webhook/gemini", {
+      const res = await fetch("https://n8n.srv728397.hstgr.cloud/webhook/gemini", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId,
-          videoId,
-          videoUrl,
-          contentType: "summary"
+          videoUrl: video.video_url,
+          userMessage: message,
+          contentType: "chatwithvideo"
         })
       });
-    } catch (err) {
-      // Optionally handle error
+      const text = await res.text();
+      setChatMessages((prev) => ({
+        ...prev,
+        [video.id]: [...(prev[video.id] || []), { role: "assistant", content: text }]
+      }));
+    } catch {
+      setChatMessages((prev) => ({
+        ...prev,
+        [video.id]: [...(prev[video.id] || []), { role: "system", content: "Error: Could not get response." }]
+      }));
+    } finally {
+      setChatLoading((prev) => ({ ...prev, [video.id]: false }));
     }
   };
 
-  // Group all content by video_url
-  const videoMap: Record<string, {
-    video_url: string;
-    video_id: string | null;
-    transcript?: Transcript;
-    summary?: Summary;
-    blogPost?: BlogPost;
-    emailContent?: EmailContent;
-    script?: Script;
-  }> = {};
-
-  transcripts.forEach((t) => {
-    if (!t.video_url) return;
-    if (!videoMap[t.video_url]) videoMap[t.video_url] = { video_url: t.video_url, video_id: t.video_id };
-    videoMap[t.video_url].transcript = t;
-  });
-  summaries.forEach((s) => {
-    if (!s.video_url) return;
-    if (!videoMap[s.video_url]) videoMap[s.video_url] = { video_url: s.video_url, video_id: s.video_id };
-    videoMap[s.video_url].summary = s;
-  });
-  blogPosts.forEach((b) => {
-    if (!b.video_url) return;
-    if (!videoMap[b.video_url]) videoMap[b.video_url] = { video_url: b.video_url, video_id: b.video_id };
-    videoMap[b.video_url].blogPost = b;
-  });
-  emailContent.forEach((e) => {
-    if (!e.video_url) return;
-    if (!videoMap[e.video_url]) videoMap[e.video_url] = { video_url: e.video_url, video_id: e.video_id };
-    videoMap[e.video_url].emailContent = e;
-  });
-  scripts.forEach((s) => {
-    if (!s.video_url) return;
-    if (!videoMap[s.video_url]) videoMap[s.video_url] = { video_url: s.video_url, video_id: s.video_id };
-    videoMap[s.video_url].script = s;
-  });
-
-  const videoEntries = Object.values(videoMap);
-
   if (loading) return <div className="text-white">Loading content...</div>;
-  if (schemaError) return <div className="p-4 text-red-500">{schemaError}</div>;
-  if (videoEntries.length === 0) {
-    return <div className="text-white p-4">No content found. Try adding a YouTube URL to get started.</div>;
-  }
+  if (videos.length === 0) return <div className="text-white p-4">No content found. Try adding a YouTube URL to get started.</div>;
 
   return (
     <Tabs defaultValue="content" className="w-full" onValueChange={setActiveTab}>
       <TabsList className="mb-4 bg-chat-accent/30">
-        <TabsTrigger value="details" className="text-white data-[state=active]:bg-chat-accent">
-          <FileText className="mr-2 h-4 w-4" />
-          Details
-        </TabsTrigger>
-        <TabsTrigger value="content" className="text-white data-[state=active]:bg-chat-accent">
-          <FileText className="mr-2 h-4 w-4" />
-          Content
-        </TabsTrigger>
-        <TabsTrigger value="notes" className="text-white data-[state=active]:bg-chat-accent">
-          <FileText className="mr-2 h-4 w-4" />
-          Notes
-        </TabsTrigger>
+        <TabsTrigger value="details" className="text-white data-[state=active]:bg-chat-accent">Details</TabsTrigger>
+        <TabsTrigger value="content" className="text-white data-[state=active]:bg-chat-accent">Content</TabsTrigger>
+        <TabsTrigger value="notes" className="text-white data-[state=active]:bg-chat-accent">Notes</TabsTrigger>
+        <TabsTrigger value="chat" className="text-white data-[state=active]:bg-chat-accent">Chat</TabsTrigger>
       </TabsList>
 
-      <TabsContent value="details" className="text-white">
-        <div className="p-4">
-          <h3 className="text-xl font-bold mb-2">Video Details</h3>
-          {summaries.length > 0 && (
-            <div>
-              <p><strong>Title:</strong> {summaries[0].video_url?.split('watch?v=')[1] || "Unknown"}</p>
-              <p><strong>URL:</strong> <a href={summaries[0].video_url || "#"} target="_blank" rel="noopener noreferrer" className="text-chat-highlight underline">{summaries[0].video_url}</a></p>
-            </div>
-          )}
-        </div>
-      </TabsContent>
-
       <TabsContent value="content" className="space-y-6">
-        {videoEntries.map((entry) => (
-          <Card key={entry.video_url} className="bg-chat-assistant text-white rounded-lg">
+        {videos.map((video) => (
+          <Card key={video.id} className="bg-chat-assistant text-white rounded-lg">
             <div className="bg-gradient-to-r from-chat-accent/20 to-transparent p-1 rounded-t-lg">
               <div className="flex justify-between items-center p-2">
                 <div className="flex items-center">
                   <div className="h-3 w-3 rounded-full bg-green-500 mr-2"></div>
-                  <h3 className="text-xl font-bold">{entry.video_url}</h3>
+                  <h3 className="text-xl font-bold">{video.video_url}</h3>
                 </div>
-                <a href={entry.video_url} target="_blank" rel="noopener noreferrer" className="text-chat-highlight underline text-xs">Open Video</a>
+                <a href={video.video_url} target="_blank" rel="noopener noreferrer" className="text-chat-highlight underline text-xs">Open Video</a>
               </div>
             </div>
             <CardContent className="p-4 space-y-4">
-              {/* Transcript */}
               <div>
                 <h4 className="font-semibold mb-1">Transcript</h4>
-                <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">
-                  {entry.transcript?.transcript || "No transcript yet."}
-                </div>
+                <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">{video.transcript || "No transcript yet."}</div>
               </div>
-              {/* Summary */}
               <div>
                 <h4 className="font-semibold mb-1">Summary</h4>
                 <div className="flex items-center gap-2">
-                  <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px] flex-1">
-                    {entry.summary?.summary || "No summary yet."}
-                  </div>
-                  <Button
-                    className="p-2 hover:bg-chat-accent/30 rounded-md"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleGetSummary(entry.video_id || '', entry.video_url)}
-                  >
-                    <RefreshCw size={20} />
-                  </Button>
+                  <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px] flex-1">{video.summary || "No summary yet."}</div>
+                  <Button className="p-2 hover:bg-chat-accent/30 rounded-md" variant="ghost" size="icon" onClick={() => handleGetSummary(video)}><RefreshCw size={20} /></Button>
                 </div>
               </div>
-              {/* Blog Post */}
               <div>
-                <h4 className="font-semibold mb-1">Blog Post</h4>
-                <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">
-                  {entry.blogPost?.content || "No blog post yet."}
-                </div>
+                <h4 className="font-semibold mb-1">Blog Post (Basic)</h4>
+                <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">{video.blog_post_basic || "No blog post yet."}</div>
               </div>
-              {/* Email */}
+              <div>
+                <h4 className="font-semibold mb-1">Blog Post (Premium)</h4>
+                <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">{video.blog_post_premium || "No premium blog post yet."}</div>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-1">Social IG</h4>
+                <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">{video.social_ig || "No IG post yet."}</div>
+              </div>
               <div>
                 <h4 className="font-semibold mb-1">Email</h4>
-                <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">
-                  {entry.emailContent?.content || "No email content yet."}
-                </div>
+                <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">{video.email || "No email content yet."}</div>
               </div>
-              {/* Script */}
               <div>
                 <h4 className="font-semibold mb-1">Script</h4>
-                <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">
-                  {entry.script?.content || "No script yet."}
+                <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">{video.script || "No script yet."}</div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </TabsContent>
+
+      <TabsContent value="chat" className="space-y-6">
+        {videos.map((video) => (
+          <Card key={video.id + "-chat"} className="bg-chat-assistant text-white rounded-lg">
+            <div className="bg-gradient-to-r from-chat-accent/20 to-transparent p-1 rounded-t-lg">
+              <div className="flex justify-between items-center p-2">
+                <div className="flex items-center">
+                  <div className="h-3 w-3 rounded-full bg-green-500 mr-2"></div>
+                  <h3 className="text-xl font-bold">Chat about: {video.video_url}</h3>
                 </div>
+              </div>
+            </div>
+            <CardContent className="p-4 space-y-4">
+              <div className="max-h-64 overflow-y-auto bg-black/10 rounded p-2 mb-2" style={{ minHeight: 80 }}>
+                {(chatMessages[video.id] || []).map((msg, idx) => (
+                  <div key={idx} className={`mb-2 ${msg.role === "user" ? "text-chat-highlight" : msg.role === "assistant" ? "text-green-400" : "text-red-400"}`}>
+                    <b>{msg.role === "user" ? "You" : msg.role === "assistant" ? "AI" : "System"}:</b> {msg.content}
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  className="flex-1 rounded p-2 bg-black/20 text-white border border-chat-accent/30 focus:outline-none"
+                  placeholder="Ask a question about this video..."
+                  value={chatInput[video.id] || ""}
+                  onChange={e => setChatInput(prev => ({ ...prev, [video.id]: e.target.value }))}
+                  onKeyDown={e => { if (e.key === "Enter") handleChatSend(video); }}
+                  disabled={chatLoading[video.id]}
+                />
+                <Button onClick={() => handleChatSend(video)} disabled={chatLoading[video.id] || !(chatInput[video.id] || "").trim()}>
+                  {chatLoading[video.id] ? "Sending..." : "Send"}
+                </Button>
               </div>
             </CardContent>
           </Card>

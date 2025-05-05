@@ -622,6 +622,65 @@ export type Database = {
         }
         Relationships: []
       }
+      video_content: {
+        Row: {
+          id: string;
+          user_id: string;
+          session_id?: string | null;
+          video_url: string;
+          video_id?: string | null;
+          transcript?: string | null;
+          summary?: string | null;
+          blog_post_basic?: string | null;
+          blog_post_premium?: string | null;
+          social_ig?: string | null;
+          email?: string | null;
+          script?: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          session_id?: string | null;
+          video_url: string;
+          video_id?: string | null;
+          transcript?: string | null;
+          summary?: string | null;
+          blog_post_basic?: string | null;
+          blog_post_premium?: string | null;
+          social_ig?: string | null;
+          email?: string | null;
+          script?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          session_id?: string | null;
+          video_url?: string;
+          video_id?: string | null;
+          transcript?: string | null;
+          summary?: string | null;
+          blog_post_basic?: string | null;
+          blog_post_premium?: string | null;
+          social_ig?: string | null;
+          email?: string | null;
+          script?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "video_content_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["user_id"];
+          }
+        ];
+      };
     }
     Views: {
       content_items_legacy: {
