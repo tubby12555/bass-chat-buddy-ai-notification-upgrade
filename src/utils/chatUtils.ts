@@ -1,6 +1,7 @@
 
 import { useToast } from "@/components/ui/use-toast";
 import { ModelType } from "@/types/chat";
+import { supabase } from "@/integrations/supabase/client";
 
 export const sendMessage = async (
   message: string,
@@ -17,6 +18,21 @@ export const sendMessage = async (
     userMessage: message,
     modelType // This is the only parameter that changes based on model selection
   });
+  
+  // Save the user message to Supabase if the model is pwned
+  if (modelType === "pwned") {
+    try {
+      await supabase.from('pwned_chat_data').insert({
+        user_id: userId,
+        session_id: sessionId,
+        message: message,
+        role: 'user',
+        metadata: { modelType }
+      });
+    } catch (error) {
+      console.error("Error saving user message to database:", error);
+    }
+  }
   
   const response = await fetch(webhookUrl, {
     method: "POST",
@@ -66,6 +82,21 @@ export const sendMessage = async (
   } else {
     // Fallback: stringify the entire response
     assistantMessage = JSON.stringify(data);
+  }
+  
+  // Save the assistant response to Supabase if the model is pwned
+  if (modelType === "pwned") {
+    try {
+      await supabase.from('pwned_chat_data').insert({
+        user_id: userId,
+        session_id: sessionId,
+        message: assistantMessage,
+        role: 'assistant',
+        metadata: { modelType }
+      });
+    } catch (error) {
+      console.error("Error saving assistant message to database:", error);
+    }
   }
   
   return assistantMessage;

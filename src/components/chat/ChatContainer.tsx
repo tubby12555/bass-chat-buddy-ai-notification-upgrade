@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import ChatSidebar from "./ChatSidebar";
 import ChatWindow from "./ChatWindow";
 import HistoryViewer from "./HistoryViewer";
+import PwnedHistoryViewer from "./PwnedHistoryViewer";
 import { Button } from "@/components/ui/button";
-import { Loader, LogOut } from "lucide-react";
+import { Loader, LogOut, Database } from "lucide-react";
 import { useChat } from "@/hooks/useChat";
 import { useChatTheme } from "@/hooks/useChatTheme";
 import { handleLogout } from "@/utils/chatUtils";
@@ -25,10 +26,12 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
     handleSendMessage,
     handleSelectSession,
     createNewSession,
-    setSelectedModel
+    setSelectedModel,
+    user
   } = useChat();
   
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isPwnedHistoryOpen, setIsPwnedHistoryOpen] = useState(false);
   
   const {
     isSidebarOpen,
@@ -37,6 +40,8 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
     isMobile,
     currentTheme
   } = useChatTheme(selectedModel, currentSessionId);
+
+  const showPwnedHistoryButton = selectedModel === "pwned";
 
   return (
     <div className="flex h-screen overflow-hidden bg-chat">
@@ -72,6 +77,17 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
           </Button>
           
           <div className="flex items-center ml-auto">
+            {showPwnedHistoryButton && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsPwnedHistoryOpen(true)}
+                className="mr-2 bg-transparent border-chat-accent text-chat-highlight hover:bg-chat-accent/20"
+              >
+                <Database className="h-4 w-4 mr-2" />
+                Pwned History
+              </Button>
+            )}
             {isLoading && <Loader className="animate-spin mr-2 h-4 w-4 text-white" />}
             <Button 
               variant="ghost" 
@@ -98,6 +114,12 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
         sessions={sessions}
         currentSessionId={currentSessionId}
         onSelectSession={handleSelectSession}
+      />
+
+      <PwnedHistoryViewer
+        isOpen={isPwnedHistoryOpen}
+        onOpenChange={setIsPwnedHistoryOpen}
+        userId={user?.id || "anonymous"}
       />
     </div>
   );
