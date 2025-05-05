@@ -196,9 +196,48 @@ const ContentSection: React.FC<ContentSectionProps> = ({ userId }) => {
     }
   };
 
+  // Group all content by video_url
+  const videoMap: Record<string, {
+    video_url: string;
+    video_id: string | null;
+    transcript?: Transcript;
+    summary?: Summary;
+    blogPost?: BlogPost;
+    emailContent?: EmailContent;
+    script?: Script;
+  }> = {};
+
+  transcripts.forEach((t) => {
+    if (!t.video_url) return;
+    if (!videoMap[t.video_url]) videoMap[t.video_url] = { video_url: t.video_url, video_id: t.video_id };
+    videoMap[t.video_url].transcript = t;
+  });
+  summaries.forEach((s) => {
+    if (!s.video_url) return;
+    if (!videoMap[s.video_url]) videoMap[s.video_url] = { video_url: s.video_url, video_id: s.video_id };
+    videoMap[s.video_url].summary = s;
+  });
+  blogPosts.forEach((b) => {
+    if (!b.video_url) return;
+    if (!videoMap[b.video_url]) videoMap[b.video_url] = { video_url: b.video_url, video_id: b.video_id };
+    videoMap[b.video_url].blogPost = b;
+  });
+  emailContent.forEach((e) => {
+    if (!e.video_url) return;
+    if (!videoMap[e.video_url]) videoMap[e.video_url] = { video_url: e.video_url, video_id: e.video_id };
+    videoMap[e.video_url].emailContent = e;
+  });
+  scripts.forEach((s) => {
+    if (!s.video_url) return;
+    if (!videoMap[s.video_url]) videoMap[s.video_url] = { video_url: s.video_url, video_id: s.video_id };
+    videoMap[s.video_url].script = s;
+  });
+
+  const videoEntries = Object.values(videoMap);
+
   if (loading) return <div className="text-white">Loading content...</div>;
   if (schemaError) return <div className="p-4 text-red-500">{schemaError}</div>;
-  if (summaries.length === 0 && transcripts.length === 0) {
+  if (videoEntries.length === 0) {
     return <div className="text-white p-4">No content found. Try adding a YouTube URL to get started.</div>;
   }
 
@@ -232,162 +271,66 @@ const ContentSection: React.FC<ContentSectionProps> = ({ userId }) => {
       </TabsContent>
 
       <TabsContent value="content" className="space-y-6">
-        {transcripts.map((transcript) => (
-          <Card key={`transcript-${transcript.id}`} className="bg-chat-assistant text-white rounded-lg">
+        {videoEntries.map((entry) => (
+          <Card key={entry.video_url} className="bg-chat-assistant text-white rounded-lg">
             <div className="bg-gradient-to-r from-chat-accent/20 to-transparent p-1 rounded-t-lg">
               <div className="flex justify-between items-center p-2">
                 <div className="flex items-center">
                   <div className="h-3 w-3 rounded-full bg-green-500 mr-2"></div>
-                  <h3 className="text-xl font-bold">Transcript</h3>
+                  <h3 className="text-xl font-bold">{entry.video_url}</h3>
                 </div>
-                <div className="flex gap-2">
-                  <button className="p-2 hover:bg-chat-accent/30 rounded-md">
-                    <Copy size={20} />
-                  </button>
-                  <button className="p-2 hover:bg-chat-accent/30 rounded-md">
-                    <Mail size={20} />
-                  </button>
-                  <button className="p-2 hover:bg-chat-accent/30 rounded-md">
-                    <Expand size={20} />
-                  </button>
-                </div>
+                <a href={entry.video_url} target="_blank" rel="noopener noreferrer" className="text-chat-highlight underline text-xs">Open Video</a>
               </div>
             </div>
-            <CardContent className="p-4">
-              <div className="mb-2 max-h-64 overflow-y-auto">
-                <div className="whitespace-pre-line">{transcript.transcript || "No transcript yet."}</div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-
-        {summaries.map((summary) => (
-          <Card key={`summary-${summary.id}`} className="bg-chat-assistant text-white rounded-lg">
-            <div className="bg-gradient-to-r from-chat-accent/20 to-transparent p-1 rounded-t-lg">
-              <div className="flex justify-between items-center p-2">
-                <div className="flex items-center">
-                  <div className="h-3 w-3 rounded-full bg-green-500 mr-2"></div>
-                  <h3 className="text-xl font-bold">Summary</h3>
+            <CardContent className="p-4 space-y-4">
+              {/* Transcript */}
+              <div>
+                <h4 className="font-semibold mb-1">Transcript</h4>
+                <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">
+                  {entry.transcript?.transcript || "No transcript yet."}
                 </div>
-                <div className="flex gap-2">
-                  <button className="p-2 hover:bg-chat-accent/30 rounded-md">
-                    <Copy size={20} />
-                  </button>
-                  <button className="p-2 hover:bg-chat-accent/30 rounded-md">
-                    <Mail size={20} />
-                  </button>
-                  <button className="p-2 hover:bg-chat-accent/30 rounded-md">
-                    <Expand size={20} />
-                  </button>
+              </div>
+              {/* Summary */}
+              <div>
+                <h4 className="font-semibold mb-1">Summary</h4>
+                <div className="flex items-center gap-2">
+                  <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px] flex-1">
+                    {entry.summary?.summary || "No summary yet."}
+                  </div>
                   <Button
                     className="p-2 hover:bg-chat-accent/30 rounded-md"
                     variant="ghost"
                     size="icon"
-                    onClick={() => handleGetSummary(summary.video_id || '', summary.video_url || '')}
+                    onClick={() => handleGetSummary(entry.video_id || '', entry.video_url)}
                   >
                     <RefreshCw size={20} />
                   </Button>
                 </div>
               </div>
-            </div>
-            <CardContent className="p-4">
-              <div className="mb-2">
-                <div className="whitespace-pre-line">{summary.summary || "No summary yet."}</div>
+              {/* Blog Post */}
+              <div>
+                <h4 className="font-semibold mb-1">Blog Post</h4>
+                <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">
+                  {entry.blogPost?.content || "No blog post yet."}
+                </div>
+              </div>
+              {/* Email */}
+              <div>
+                <h4 className="font-semibold mb-1">Email</h4>
+                <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">
+                  {entry.emailContent?.content || "No email content yet."}
+                </div>
+              </div>
+              {/* Script */}
+              <div>
+                <h4 className="font-semibold mb-1">Script</h4>
+                <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">
+                  {entry.script?.content || "No script yet."}
+                </div>
               </div>
             </CardContent>
           </Card>
         ))}
-
-        {/* Placeholder for future content types */}
-        <Card className="bg-chat-assistant text-white rounded-lg opacity-50">
-          <div className="bg-gradient-to-r from-chat-accent/20 to-transparent p-1 rounded-t-lg">
-            <div className="flex justify-between items-center p-2">
-              <div className="flex items-center">
-                <div className="h-3 w-3 rounded-full bg-green-500 mr-2"></div>
-                <h3 className="text-xl font-bold">Blog Post</h3>
-              </div>
-              <div className="flex gap-2">
-                <button className="p-2 hover:bg-chat-accent/30 rounded-md" disabled>
-                  <Copy size={20} />
-                </button>
-                <button className="p-2 hover:bg-chat-accent/30 rounded-md" disabled>
-                  <Mail size={20} />
-                </button>
-                <button className="p-2 hover:bg-chat-accent/30 rounded-md" disabled>
-                  <Expand size={20} />
-                </button>
-                <button className="p-2 hover:bg-chat-accent/30 rounded-md" disabled>
-                  <RefreshCw size={20} />
-                </button>
-              </div>
-            </div>
-          </div>
-          <CardContent className="p-4">
-            <div className="mb-2">
-              <div className="whitespace-pre-line">Coming soon - this feature will generate blog posts from your YouTube content.</div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-chat-assistant text-white rounded-lg opacity-50">
-          <div className="bg-gradient-to-r from-chat-accent/20 to-transparent p-1 rounded-t-lg">
-            <div className="flex justify-between items-center p-2">
-              <div className="flex items-center">
-                <div className="h-3 w-3 rounded-full bg-green-500 mr-2"></div>
-                <h3 className="text-xl font-bold">Email</h3>
-              </div>
-              <div className="flex gap-2">
-                <button className="p-2 hover:bg-chat-accent/30 rounded-md" disabled>
-                  <Copy size={20} />
-                </button>
-                <button className="p-2 hover:bg-chat-accent/30 rounded-md" disabled>
-                  <Mail size={20} />
-                </button>
-                <button className="p-2 hover:bg-chat-accent/30 rounded-md" disabled>
-                  <Expand size={20} />
-                </button>
-                <button className="p-2 hover:bg-chat-accent/30 rounded-md" disabled>
-                  <RefreshCw size={20} />
-                </button>
-              </div>
-            </div>
-          </div>
-          <CardContent className="p-4">
-            <div className="mb-2">
-              <div className="whitespace-pre-line">Coming soon - this feature will generate email content from your YouTube videos.</div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-chat-assistant text-white rounded-lg opacity-50">
-          <div className="bg-gradient-to-r from-chat-accent/20 to-transparent p-1 rounded-t-lg">
-            <div className="flex justify-between items-center p-2">
-              <div className="flex items-center">
-                <div className="h-3 w-3 rounded-full bg-green-500 mr-2"></div>
-                <h3 className="text-xl font-bold">Script</h3>
-              </div>
-              <div className="flex gap-2">
-                <button className="p-2 hover:bg-chat-accent/30 rounded-md" disabled>
-                  <Copy size={20} />
-                </button>
-                <button className="p-2 hover:bg-chat-accent/30 rounded-md" disabled>
-                  <Mail size={20} />
-                </button>
-                <button className="p-2 hover:bg-chat-accent/30 rounded-md" disabled>
-                  <Expand size={20} />
-                </button>
-                <button className="p-2 hover:bg-chat-accent/30 rounded-md" disabled>
-                  <RefreshCw size={20} />
-                </button>
-              </div>
-            </div>
-          </div>
-          <CardContent className="p-4">
-            <div className="mb-2">
-              <div className="whitespace-pre-line">Coming soon - this feature will generate scripts from your YouTube content.</div>
-            </div>
-          </CardContent>
-        </Card>
       </TabsContent>
 
       <TabsContent value="notes" className="text-white">
