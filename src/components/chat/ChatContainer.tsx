@@ -10,6 +10,7 @@ import { useChat } from "@/hooks/useChat";
 import { useChatTheme } from "@/hooks/useChatTheme";
 import { handleLogout } from "@/utils/chatUtils";
 import ChatTheme from "./ChatTheme";
+import ContentSection from "./ContentSection";
 
 interface ChatContainerProps {
   onLogout: () => void;
@@ -106,6 +107,7 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
           isLoading={isLoading}
           modelType={selectedModel}
         />
+        <ContentSection userId={user?.id || "anonymous"} />
       </div>
 
       <HistoryViewer 

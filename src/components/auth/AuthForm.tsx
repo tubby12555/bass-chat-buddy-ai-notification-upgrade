@@ -57,6 +57,11 @@ const AuthForm = ({ onAuthSuccess }: AuthFormProps) => {
 
       if (error) throw error;
 
+      // Insert profile row for new user
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData?.user?.id) {
+        await supabase.from('profiles').insert({ user_id: userData.user.id });
+      }
       toast({
         title: "Sign up successful",
         description: "Please check your email for a confirmation link",

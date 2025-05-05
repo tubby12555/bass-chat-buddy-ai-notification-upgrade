@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,8 +19,21 @@ const App = () => {
       setIsAuthenticated(!!data.session);
 
       // Set up auth listener
-      supabase.auth.onAuthStateChange((_event, session) => {
+      supabase.auth.onAuthStateChange(async (_event, session) => {
         setIsAuthenticated(!!session);
+        if (session?.user) {
+          const userId = session.user.id;
+          // Check if profile exists
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('user_id')
+            .eq('user_id', userId)
+            .maybeSingle();
+          if (!profile && !error) {
+            // Insert new profile with just user_id
+            await supabase.from('profiles').insert({ user_id: userId });
+          }
+        }
       });
     };
 
