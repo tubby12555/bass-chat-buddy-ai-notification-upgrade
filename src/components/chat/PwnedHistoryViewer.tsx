@@ -1,22 +1,11 @@
 
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { ModelType } from "@/types/chat";
-import { Button } from "../ui/button";
-import { Trash2 } from "lucide-react";
-import { useToast } from "../ui/use-toast";
-import MessageBubble from "./MessageBubble";
-import { v4 as uuidv4 } from "uuid";
-
-interface PwnedChatData {
-  id: string;
-  user_id: string;
-  session_id: string;
-  content: string;
-  model_type?: ModelType;
-  created_at: string; // Ensure this is always defined in our interface
-}
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/components/ui/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface PwnedHistoryViewerProps {
   isOpen: boolean;
@@ -24,175 +13,145 @@ interface PwnedHistoryViewerProps {
   userId: string;
 }
 
-const PwnedHistoryViewer = ({
-  isOpen,
-  onOpenChange,
-  userId,
-}: PwnedHistoryViewerProps) => {
-  const [chatData, setChatData] = useState<PwnedChatData[]>([]);
-  const [sessions, setSessions] = useState<string[]>([]);
-  const [selectedSession, setSelectedSession] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+// TypeScript interface for our data structure
+interface PwnedItem {
+  id: string;
+  content: string;
+  user_id: string;
+  session_id: string;
+  model_type: string;
+  created_at?: string; // Make created_at optional
+}
+
+const PwnedHistoryViewer = ({ isOpen, onOpenChange, userId }: PwnedHistoryViewerProps) => {
+  const [history, setHistory] = useState<PwnedItem[]>([]);
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (isOpen && userId) {
-      fetchSessions();
+    if (isOpen) {
+      loadHistory();
     }
   }, [isOpen, userId]);
 
-  const fetchSessions = async () => {
-    setIsLoading(true);
+  const loadHistory = async () => {
+    if (!userId) return;
+    
+    setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('pwned_chat_data')
-        .select('session_id')
-        .eq('user_id', userId)
-        .eq('model_type', 'pwned')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      // Get unique session IDs
-      const uniqueSessions = [...new Set(data.map(item => item.session_id))];
-      setSessions(uniqueSessions);
-      
-      if (uniqueSessions.length > 0) {
-        setSelectedSession(uniqueSessions[0]);
-        await fetchSessionData(uniqueSessions[0]);
-      }
-    } catch (error: any) {
-      console.error("Error fetching sessions:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load chat history",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchSessionData = async (sessionId: string) => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('pwned_chat_data')
+        .from('pwned_history')
         .select('*')
-        .eq('session_id', sessionId)
         .eq('user_id', userId)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-
-      // Make sure all objects have all the required properties
-      const processedData = data.map(item => ({
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Ensure all items have a created_at property
+      const processedData = (data || []).map(item => ({
         ...item,
-        id: item.id || uuidv4(),
-        created_at: item.created_at || new Date().toISOString(),
-        model_type: item.model_type || "pwned"
-      })) as PwnedChatData[];
-
-      setChatData(processedData);
-      setSelectedSession(sessionId);
-    } catch (error: any) {
-      console.error("Error fetching session data:", error);
+        created_at: item.created_at || new Date().toISOString()
+      }));
+      
+      setHistory(processedData);
+    } catch (error) {
+      console.error('Error loading pwned history:', error);
       toast({
         title: "Error",
-        description: "Failed to load session data",
-        variant: "destructive",
+        description: "Could not load history",
+        variant: "destructive"
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const clearHistory = async () => {
-    if (!selectedSession) return;
-
-    try {
-      const { error } = await supabase
-        .from('pwned_chat_data')
-        .delete()
-        .eq('session_id', selectedSession)
-        .eq('user_id', userId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Chat history cleared",
-      });
-      
-      // Refresh sessions
-      fetchSessions();
-    } catch (error: any) {
-      console.error("Error clearing history:", error);
-      toast({
-        title: "Error",
-        description: "Failed to clear chat history",
-        variant: "destructive",
-      });
+  // Group items by session_id
+  const groupedHistory = history.reduce((acc, item) => {
+    if (!acc[item.session_id]) {
+      acc[item.session_id] = [];
     }
+    acc[item.session_id].push(item);
+    return acc;
+  }, {} as Record<string, PwnedItem[]>);
+
+  // Convert to array and sort by most recent
+  const sessions = Object.entries(groupedHistory)
+    .map(([sessionId, items]) => ({
+      sessionId,
+      items,
+      // Find the most recent item in the session
+      lastActivity: new Date(
+        Math.max(...items.map(item => new Date(item.created_at || 0).getTime()))
+      )
+    }))
+    .sort((a, b) => b.lastActivity.getTime() - a.lastActivity.getTime());
+
+  // Format date for display
+  const formatDate = (date: Date) => {
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl bg-chat text-white border-chat-accent">
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle className="text-chat-highlight">Pwned Model Conversation History</DialogTitle>
+          <DialogTitle>Pwned History</DialogTitle>
         </DialogHeader>
         
-        {sessions.length === 0 ? (
-          <div className="p-4 text-center">
-            <p>No pwned model conversation history found.</p>
-          </div>
-        ) : (
-          <div className="flex flex-col space-y-4 mt-4">
-            <div className="flex justify-between items-center">
-              <div className="flex space-x-2 overflow-x-auto pb-2">
-                {sessions.map(sessionId => (
-                  <Button
-                    key={sessionId}
-                    variant={selectedSession === sessionId ? "default" : "outline"}
-                    className={selectedSession === sessionId ? "bg-chat-highlight" : "bg-transparent"}
-                    onClick={() => fetchSessionData(sessionId)}
-                    size="sm"
-                  >
-                    {sessionId.substring(0, 8)}
-                  </Button>
-                ))}
+        <Tabs defaultValue="sessions">
+          <TabsList className="grid grid-cols-2">
+            <TabsTrigger value="sessions">Sessions</TabsTrigger>
+            <TabsTrigger value="queries">Queries</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="sessions" className="min-h-[400px]">
+            {loading ? (
+              <div className="flex items-center justify-center h-80">
+                <p>Loading history...</p>
               </div>
-              
-              {selectedSession && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={clearHistory}
-                  className="flex items-center"
-                >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Clear
-                </Button>
-              )}
+            ) : sessions.length === 0 ? (
+              <div className="flex items-center justify-center h-80">
+                <p>No pwned history found</p>
+              </div>
+            ) : (
+              <ScrollArea className="h-[400px] pr-4">
+                {sessions.map(session => (
+                  <div key={session.sessionId} className="mb-6">
+                    <h3 className="text-lg font-medium mb-2">
+                      Session {session.sessionId.substring(0, 8)}...
+                      <span className="text-sm font-normal text-muted-foreground ml-2">
+                        {formatDate(session.lastActivity)}
+                      </span>
+                    </h3>
+                    
+                    {session.items.map(item => (
+                      <div key={item.id} className="rounded-md border p-3 mb-3">
+                        <p className="whitespace-pre-wrap text-sm">{item.content}</p>
+                      </div>
+                    ))}
+                    
+                    <Separator />
+                  </div>
+                ))}
+              </ScrollArea>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="queries" className="min-h-[400px]">
+            <div className="flex items-center justify-center h-80">
+              <p>SQL query history will be shown here</p>
             </div>
-            
-            <div className="space-y-4 max-h-[60vh] overflow-y-auto p-2">
-              {chatData.map((item) => (
-                <MessageBubble
-                  key={item.id}
-                  message={{
-                    id: item.id,
-                    role: item.user_id === userId ? "user" : "assistant",
-                    content: item.content,
-                    timestamp: new Date(item.created_at).getTime()
-                  }}
-                  modelType={item.model_type || "qwen"}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
