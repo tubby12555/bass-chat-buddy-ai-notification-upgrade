@@ -16,7 +16,7 @@ interface Session {
   id: string;
   title: string;
   createdAt: number;
-  messages: any[];
+  messages: unknown[];
 }
 
 interface ChatSidebarProps {
@@ -56,7 +56,14 @@ const ChatSidebar = ({
       setIsYouTubeModalOpen(true);
       return;
     }
-    
+    if (tool === "images") {
+      window.location.href = "/images";
+      return;
+    }
+    if (tool === "content") {
+      window.location.href = "/content";
+      return;
+    }
     console.log(`Tool clicked: ${tool}`);
     // Other tools handling will be implemented in the future
   };

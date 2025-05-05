@@ -1,7 +1,8 @@
-
 import React from "react";
 import AuthForm from "@/components/auth/AuthForm";
 import ChatContainer from "@/components/chat/ChatContainer";
+import ImagesPage from "@/pages/ImagesPage";
+import { Routes, Route } from "react-router-dom";
 
 interface IndexProps {
   isAuthenticated: boolean;
@@ -27,6 +28,14 @@ const Index = ({ isAuthenticated, setIsAuthenticated }: IndexProps) => {
         </div>
       )}
     </div>
+  );
+};
+
+const AppRoutes = () => {
+  return (
+    <Routes>
+      <Route path="/images" element={<ImagesPage />} />
+    </Routes>
   );
 };
 
