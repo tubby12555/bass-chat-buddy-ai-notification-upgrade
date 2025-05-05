@@ -1,22 +1,21 @@
 
-import React, { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { format } from "date-fns";
+import React from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Drawer, DrawerClose, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
-import { Copy } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { X } from "lucide-react";
 import MessageBubble from "./MessageBubble";
+import { formatDistanceToNow } from "date-fns";
+import { ModelType } from "@/types/chat";
 
 interface PwnedChatData {
   id: string;
-  user_id: string;
-  session_id: string;
-  content: string;
   model_type: string;
-  created_at?: string;
+  content: string;
+  session_id: string;
+  user_id: string;
+  created_at: string;
 }
 
 interface PwnedHistoryViewerProps {
@@ -25,171 +24,95 @@ interface PwnedHistoryViewerProps {
   userId: string;
 }
 
-const PwnedHistoryViewer = ({
-  isOpen,
-  onOpenChange,
-  userId
-}: PwnedHistoryViewerProps) => {
-  const [sessions, setSessions] = useState<Record<string, PwnedChatData[]>>({});
-  const [sessionIds, setSessionIds] = useState<string[]>([]);
+const PwnedHistoryViewer = ({ isOpen, onOpenChange, userId }: PwnedHistoryViewerProps) => {
+  const [pwnedData, setPwnedData] = useState<PwnedChatData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isOpen && userId) {
-      fetchPwnedChatData();
-      // Realtime subscription
-      const channel = supabase
-        .channel('pwned_chat_data_realtime')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'pwned_chat_data',
-            filter: `user_id=eq.${userId}`
-          },
-          () => {
-            fetchPwnedChatData();
-          }
-        )
-        .subscribe();
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
+    const fetchPwnedData = async () => {
+      if (!isOpen || !userId) return;
+      
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const { data, error } = await supabase
+          .from('pwned_chat_data')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        if (data) {
+          // Transform the data if necessary
+          const transformedData = data.map((item: any) => ({
+            id: item.id,
+            model_type: item.model_type || "unknown",
+            content: item.content,
+            session_id: item.session_id,
+            user_id: item.user_id,
+            created_at: item.created_at || new Date().toISOString()
+          }));
+          
+          setPwnedData(transformedData);
+        }
+      } catch (err) {
+        console.error('Error fetching pwned chat data:', err);
+        setError('Failed to load pwned chat data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPwnedData();
   }, [isOpen, userId]);
 
-  const fetchPwnedChatData = async () => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('pwned_chat_data')
-        .select('*')
-        .eq('user_id', userId);
+  const renderMessages = () => {
+    if (isLoading) return <div className="p-4 text-center">Loading...</div>;
+    if (error) return <div className="p-4 text-center text-red-500">{error}</div>;
+    if (pwnedData.length === 0) return <div className="p-4 text-center">No pwned chat data found</div>;
 
-      if (error) {
-        console.error("Error fetching pwned chat data:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load chat history",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Group messages by session_id
-      const groupedSessions: Record<string, PwnedChatData[]> = {};
-      data.forEach(message => {
-        if (!groupedSessions[message.session_id]) {
-          groupedSessions[message.session_id] = [];
-        }
-        groupedSessions[message.session_id].push(message as PwnedChatData);
-      });
-
-      setSessions(groupedSessions);
-      setSessionIds(Object.keys(groupedSessions));
-
-    } catch (error) {
-      console.error("Error processing chat data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to process chat history",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    return pwnedData.map((item) => (
+      <div key={item.id} className="border-b border-gray-700 mb-4 pb-4">
+        <div className="flex justify-between text-xs text-gray-400 mb-2">
+          <div>
+            Model: {item.model_type || "Unknown"}
+          </div>
+          <div>
+            {item.created_at && formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
+          </div>
+        </div>
+        <MessageBubble 
+          message={{ 
+            role: "assistant", 
+            content: item.content
+          }}
+          modelType={item.model_type as ModelType || "assistant"}
+        />
+      </div>
+    ));
   };
-
-  const copySessionToClipboard = (sessionId: string) => {
-    const sessionData = sessions[sessionId];
-    if (sessionData) {
-      const text = sessionData.map(msg => 
-        `Model: ${msg.model_type} | Content: ${msg.content}`
-      ).join('\n\n');
-      
-      navigator.clipboard.writeText(text).then(() => {
-        toast({
-          title: "Copied to clipboard",
-          description: "Chat session has been copied to clipboard"
-        });
-      });
-    }
-  };
-
-  // If no sessions are available
-  const noSessions = sessionIds.length === 0;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[80%] max-h-[80vh] bg-chat text-white border-chat-accent">
-        <DialogHeader>
-          <DialogTitle className="text-chat-highlight">Pwned Chat History</DialogTitle>
-        </DialogHeader>
-
-        {isLoading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-pulse text-chat-highlight">Loading...</div>
+    <Drawer open={isOpen} onOpenChange={onOpenChange}>
+      <DrawerContent className="bg-black text-white">
+        <DrawerHeader>
+          <div className="flex justify-between items-center">
+            <DrawerTitle className="text-white">Pwned Chat History</DrawerTitle>
+            <DrawerClose asChild>
+              <Button variant="ghost" size="icon">
+                <X className="h-4 w-4" />
+              </Button>
+            </DrawerClose>
           </div>
-        ) : noSessions ? (
-          <div className="flex flex-col items-center justify-center h-64">
-            <p className="text-center text-gray-400">No pwned chat history found.</p>
-            <p className="text-center text-gray-400">Try using the pwned model first!</p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <Carousel className="w-full">
-              <CarouselContent>
-                {sessionIds.map((sessionId, index) => (
-                  <CarouselItem key={sessionId}>
-                    <div className="p-4">
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-chat-highlight text-lg">
-                          Session {index + 1} - {format(new Date(sessions[sessionId][0]?.created_at || Date.now()), "MMM d, yyyy")}
-                        </h3>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => copySessionToClipboard(sessionId)}
-                          className="text-white hover:bg-chat-accent/20"
-                        >
-                          <Copy className="h-4 w-4 mr-2" />
-                          Copy
-                        </Button>
-                      </div>
-
-                      <ScrollArea className="h-[calc(80vh-10rem)] w-full">
-                        <div className="space-y-6 p-4">
-                          {sessions[sessionId].map((message) => {
-                            const timestamp = message.created_at ? new Date(message.created_at).getTime() : Date.now();
-                            return (
-                              <div key={message.id}>
-                                <MessageBubble
-                                  message={{
-                                    id: message.id,
-                                    role: "assistant",
-                                    content: message.content,
-                                    timestamp
-                                  }}
-                                  modelType={message.model_type}
-                                />
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </ScrollArea>
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious className="left-2 bg-chat-accent text-white hover:bg-chat-accent/80" />
-              <CarouselNext className="right-2 bg-chat-accent text-white hover:bg-chat-accent/80" />
-            </Carousel>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+        </DrawerHeader>
+        <div className="p-4 overflow-y-auto max-h-[70vh]">
+          {renderMessages()}
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 };
 
