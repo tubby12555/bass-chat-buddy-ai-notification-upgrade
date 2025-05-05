@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Copy, Download, ExternalLink, Image } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import ImageUploadManager from "./ImageUploadManager";
 
 interface ContentImage {
   id: string;
@@ -36,37 +37,37 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
   const [tab, setTab] = useState<string>("all");
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchImages = async () => {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from("content_images")
-          .select("id, user_id, permanent_url, content_type, prompt, style, blog, created_at")
-          .eq("user_id", userId)
-          .order("created_at", { ascending: false });
-        
-        if (error) {
-          console.error("Error fetching images:", error);
-          toast({
-            title: "Error",
-            description: "Failed to load images. Please try again.",
-            variant: "destructive"
-          });
-        } else if (data) {
-          // Filter out images with invalid permanent_url
-          const validImages = data.filter(img => isValidSupabaseUrl(img.permanent_url));
-          setImages(validImages as ContentImage[]);
-        }
-      } catch (err) {
-        console.error("Unexpected error:", err);
-      } finally {
-        setLoading(false);
+  const fetchImages = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("content_images")
+        .select("id, user_id, permanent_url, content_type, prompt, style, blog, created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+      
+      if (error) {
+        console.error("Error fetching images:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load images. Please try again.",
+          variant: "destructive"
+        });
+      } else if (data) {
+        // Filter out images with invalid permanent_url
+        const validImages = data.filter(img => isValidSupabaseUrl(img.permanent_url));
+        setImages(validImages as ContentImage[]);
       }
-    };
-    
-    if (userId) fetchImages();
+    } catch (err) {
+      console.error("Unexpected error:", err);
+    } finally {
+      setLoading(false);
+    }
   }, [userId, toast]);
+
+  useEffect(() => {
+    if (userId) fetchImages();
+  }, [userId, fetchImages]);
 
   const filteredImages = tab === "all" 
     ? images 
@@ -91,6 +92,8 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
 
   return (
     <div className="p-2">
+      <ImageUploadManager userId={userId} onUploadComplete={fetchImages} />
+      
       <Tabs defaultValue="all" value={tab} onValueChange={setTab} className="w-full">
         <TabsList className="mb-4 bg-chat-assistant/50">
           {TABS.map(t => (
