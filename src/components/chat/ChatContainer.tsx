@@ -40,6 +40,8 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
   
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isPwnedHistoryOpen, setIsPwnedHistoryOpen] = useState(false);
+  const [isFluxImageModalOpen, setIsFluxImageModalOpen] = useState(false);
+  const [isGpt4ImageModalOpen, setIsGpt4ImageModalOpen] = useState(false);
   
   const {
     isSidebarOpen,
@@ -50,6 +52,18 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
   } = useChatTheme(selectedModel, currentSessionId);
 
   const showPwnedHistoryButton = selectedModel === "pwned";
+
+  const handleSidebarToolClick = (tool: string) => {
+    if (tool === "gen-image-flux") {
+      setIsFluxImageModalOpen(true);
+      return;
+    }
+    if (tool === "gen-image-gpt4") {
+      setIsGpt4ImageModalOpen(true);
+      return;
+    }
+    // YouTube handled in ChatSidebar, others can be handled as needed
+  };
 
   return (
     <div className="flex h-screen overflow-hidden bg-chat">
@@ -126,9 +140,9 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
       />
 
       <PwnedHistoryViewer
-        isOpen={isPwnedHistoryOpen}
-        onOpenChange={setIsPwnedHistoryOpen}
         userId={user?.id || "anonymous"}
+        onSelectSession={() => {}}
+        currentSessionId={currentSessionId}
       />
     </div>
   );
