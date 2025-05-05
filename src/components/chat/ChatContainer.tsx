@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import ChatSidebar from "@/components/chat/ChatSidebar";
 import ChatWindow from "./ChatWindow";
 import YouTubeModal from "./YouTubeModal";
@@ -12,199 +11,124 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { logEventToSupabase } from "@/utils/loggingUtils";
 import { ModelType } from "@/types/chat";
+import ImagesPage from "@/pages/ImagesPage";
+import { useChat } from "@/hooks/useChat";
+import { useChatTheme } from "@/hooks/useChatTheme";
+import { handleLogout } from "@/utils/chatUtils";
+import ChatTheme from "./ChatTheme";
+import { Button } from "@/components/ui/button";
+import { Loader, LogOut, Database } from "lucide-react";
+import HistoryViewer from "./HistoryViewer";
 
 interface ChatContainerProps {
   onLogout: () => void;
 }
 
 const ChatContainer = ({ onLogout }: ChatContainerProps) => {
-  const [isYouTubeModalOpen, setIsYouTubeModalOpen] = useState(false);
-  const [isContentSectionOpen, setIsContentSectionOpen] = useState(false);
-  const [isFluxImageModalOpen, setIsFluxImageModalOpen] = useState(false);
-  const [isGpt4ImageModalOpen, setIsGpt4ImageModalOpen] = useState(false);
-  const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [userLoggedIn, setUserLoggedIn] = useState(false);
-  const { setTheme } = useTheme();
-  const { toast } = useToast();
-  const [modelType, setModelType] = useState<ModelType>("gemini");
-  const [activeSession, setActiveSession] = useState<any>(null);
-  const [messages, setMessages] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const {
+    sessions,
+    currentSession,
+    currentSessionId,
+    isLoading,
+    selectedModel,
+    handleSendMessage,
+    handleSelectSession,
+    createNewSession,
+    setSelectedModel,
+    user
+  } = useChat();
+  
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isPwnedHistoryOpen, setIsPwnedHistoryOpen] = useState(false);
+  
+  const {
+    isSidebarOpen,
+    toggleSidebar,
+    setIsSidebarOpen,
+    isMobile,
+    currentTheme
+  } = useChatTheme(selectedModel, currentSessionId);
 
-  useEffect(() => {
-    const getSession = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          setUserId(user?.id);
-          setUserLoggedIn(true);
-        } else {
-          setUserId(null);
-          setUserLoggedIn(false);
-        }
-      } catch (error) {
-        console.error("Error fetching user:", error);
-      }
-    };
-
-    getSession();
-
-    supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN') {
-        setUserId(session?.user.id || null);
-        setUserLoggedIn(true);
-      } else if (event === 'SIGNED_OUT') {
-        setUserId(null);
-        setUserLoggedIn(false);
-      }
-    });
-  }, []);
-
-  const handleToolClick = (tool: string) => {
-    switch (tool) {
-      case "youtube":
-        setIsYouTubeModalOpen(true);
-        break;
-      case "notes":
-        toast({
-          title: "Coming Soon",
-          description: "This feature is under development.",
-        });
-        break;
-      case "calendar":
-        toast({
-          title: "Coming Soon",
-          description: "This feature is under development.",
-        });
-        break;
-      case "content":
-        setIsContentSectionOpen(true);
-        break;
-      case "gen-image-flux":
-        setIsFluxImageModalOpen(true);
-        break;
-      case "gen-image-gpt4":
-        setIsGpt4ImageModalOpen(true);
-        break;
-      case "images":
-        window.location.href = "/images";
-        break;
-      default:
-        console.log(`Tool clicked: ${tool}`);
-    }
-  };
-
-  const handleThemeChange = (theme: string) => {
-    setTheme(theme);
-  };
-
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      setUserLoggedIn(false);
-      onLogout(); // Pass it up to the parent component
-      toast({
-        title: "Logged out",
-        description: "Successfully logged out.",
-      });
-    } catch (error) {
-      console.error("Error logging out:", error);
-      toast({
-        title: "Logout Failed",
-        description: "Failed to log out. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Function to handle changes in chat model type
-  const handleModelChange = (newModel: ModelType) => {
-    setModelType(newModel);
-    
-    // Log model change event if user is authenticated
-    if (userLoggedIn && userId) {
-      const logEvent = async () => {
-        try {
-          // Log using the logEventToSupabase utility function instead of direct table insert
-          await logEventToSupabase(userId, 'model_change', {
-            from: modelType,
-            to: newModel,
-            session_id: activeSession?.id
-          });
-        } catch (error) {
-          console.error("Failed to log model change:", error);
-        }
-      };
-      logEvent();
-    }
-  };
-
-  const handleSendMessage = (message: string) => {
-    // Placeholder function for ChatWindow
-    console.log("Message sent:", message);
-    // Add implementation for sending messages
-  };
-
-  const onNewSession = () => {
-    // Implementation for creating a new session
-    console.log("Creating new session");
-    setActiveSession({ id: Date.now().toString(), messages: [] });
-  };
+  const showPwnedHistoryButton = selectedModel === "pwned";
 
   return (
-    <div className="flex flex-col h-dvh lg:flex-row">
+    <div className="flex h-screen overflow-hidden bg-chat">
+      <ChatTheme currentTheme={currentTheme} />
+
       <ChatSidebar
-        sessions={[]}
-        currentSessionId={activeSession?.id || ""}
-        onSelectSession={() => {}}
-        onNewChat={onNewSession}
-        isOpen={isMobileMenuOpen}
-        onToggleSidebar={() => setMobileMenuOpen(!isMobileMenuOpen)}
-        selectedModel={modelType}
-        onSelectModel={handleModelChange}
-        onLogout={handleLogout}
-        onViewHistory={() => {}}
-        userId={userId || ""}
+        sessions={sessions}
+        currentSessionId={currentSessionId}
+        onSelectSession={(sessionId) => {
+          handleSelectSession(sessionId);
+          if (isMobile) {
+            setIsSidebarOpen(false);
+          }
+        }}
+        onNewChat={createNewSession}
+        isOpen={isSidebarOpen}
+        onToggleSidebar={toggleSidebar}
+        selectedModel={selectedModel}
+        onSelectModel={setSelectedModel}
+        onLogout={() => handleLogout(onLogout, supabase)}
+        onViewHistory={() => setIsHistoryOpen(true)}
+        userId={user?.id || "anonymous"}
       />
       
-      <ChatWindow
-        messages={messages}
-        onSendMessage={handleSendMessage}
-        isLoading={isLoading}
-        modelType={modelType}
+      <div className="flex-1 flex flex-col">
+        <div className="flex justify-between items-center p-2 border-b border-chat-assistant">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            className="md:hidden text-white"
+            onClick={toggleSidebar}
+          >
+            {isSidebarOpen ? "Hide Menu" : "Menu"}
+          </Button>
+          
+          <div className="flex items-center ml-auto">
+            {showPwnedHistoryButton && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsPwnedHistoryOpen(true)}
+                className="mr-2 bg-transparent border-chat-accent text-chat-highlight hover:bg-chat-accent/20"
+              >
+                <Database className="h-4 w-4 mr-2" />
+                Pwned History
+              </Button>
+            )}
+            {isLoading && <Loader className="animate-spin mr-2 h-4 w-4 text-white" />}
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => handleLogout(onLogout, supabase)}
+              className="text-white hover:bg-chat-assistant"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        
+        <ChatWindow
+          messages={currentSession?.messages || []}
+          onSendMessage={handleSendMessage}
+          isLoading={isLoading}
+          modelType={selectedModel}
+        />
+      </div>
+
+      <HistoryViewer 
+        isOpen={isHistoryOpen} 
+        onOpenChange={setIsHistoryOpen}
+        sessions={sessions}
+        currentSessionId={currentSessionId}
+        onSelectSession={handleSelectSession}
       />
-      
-      {/* Modals */}
-      <YouTubeModal
-        open={isYouTubeModalOpen}
-        onOpenChange={setIsYouTubeModalOpen} 
-        userId={userId || ""}
-        onSubmit={async () => {}}
-        loading={false}
-      />
-      
-      {/* Fix by passing all required props to PwnedHistoryViewer */}
-      <PwnedHistoryViewer 
-        userId={userId || ""}
-        onSelectSession={() => {}}
-        currentSessionId=""
-      />
-      
-      <ContentSection 
-        userId={userId || ""} 
-      />
-      
-      <FluxImageGenModal
-        open={isFluxImageModalOpen}
-        onOpenChange={setIsFluxImageModalOpen}
-        userId={userId || ""}
-      />
-      
-      <Gpt4ImageGenModal
-        open={isGpt4ImageModalOpen}
-        onOpenChange={setIsGpt4ImageModalOpen}
-        userId={userId || ""}
+
+      <PwnedHistoryViewer
+        isOpen={isPwnedHistoryOpen}
+        onOpenChange={setIsPwnedHistoryOpen}
+        userId={user?.id || "anonymous"}
       />
     </div>
   );

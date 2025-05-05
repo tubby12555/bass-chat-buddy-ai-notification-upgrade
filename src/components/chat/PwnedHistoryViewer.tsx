@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
@@ -112,12 +111,13 @@ const PwnedHistoryViewer: React.FC<PwnedHistoryViewerProps> = ({
   };
 
   if (loading) {
-    return <div className="text-gray-400 text-center p-4">Loading sessions...</div>;
+    // Only show loading if we expect sessions to load
+    return null;
   }
 
   const sessionIds = Object.keys(sessions);
   if (sessionIds.length === 0) {
-    return <div className="text-gray-400 text-center p-4">No previous sessions found.</div>;
+    return null;
   }
 
   return (

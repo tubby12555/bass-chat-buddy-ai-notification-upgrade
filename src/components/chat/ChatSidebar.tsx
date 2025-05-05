@@ -33,6 +33,7 @@ interface ChatSidebarProps {
   onLogout: () => void;
   onViewHistory: () => void;
   userId: string;
+  onToolClick?: (tool: string) => void;
 }
 
 const ChatSidebar = ({
@@ -46,39 +47,14 @@ const ChatSidebar = ({
   onSelectModel,
   onLogout,
   onViewHistory,
-  userId
+  userId,
+  onToolClick
 }: ChatSidebarProps) => {
   const [isYouTubeModalOpen, setIsYouTubeModalOpen] = useState(false);
   const [isYouTubeLoading, setIsYouTubeLoading] = useState(false);
   const [isFluxModalOpen, setIsFluxModalOpen] = useState(false);
   const [isGpt4ModalOpen, setIsGpt4ModalOpen] = useState(false);
   const { toast } = useToast();
-
-  // Handle tool section clicks
-  const handleToolClick = (tool: string) => {
-    if (tool === "youtube") {
-      setIsYouTubeModalOpen(true);
-      return;
-    }
-    if (tool === "gen-image-flux") {
-      setIsFluxModalOpen(true);
-      return;
-    }
-    if (tool === "gen-image-gpt4") {
-      setIsGpt4ModalOpen(true);
-      return;
-    }
-    if (tool === "images") {
-      window.location.href = "/images";
-      return;
-    }
-    if (tool === "content") {
-      window.location.href = "/content";
-      return;
-    }
-    console.log(`Tool clicked: ${tool}`);
-    // Other tools handling will be implemented in the future
-  };
 
   const handleYouTubeSubmit = async (videoUrl: string) => {
     setIsYouTubeLoading(true);
@@ -134,10 +110,10 @@ const ChatSidebar = ({
         />
         
         {/* Tools Section */}
-        <ToolsSection onToolClick={handleToolClick} />
+        <ToolsSection onToolClick={onToolClick} />
         
         {/* Settings Section */}
-        <SettingsSection onToolClick={handleToolClick} />
+        <SettingsSection onToolClick={onToolClick} />
         
         {/* Sign Out button remains at the bottom */}
         <div className="mt-auto border-t border-chat-assistant">
