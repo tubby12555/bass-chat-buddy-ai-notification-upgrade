@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, FileText, Expand, Mail, RefreshCw } from "lucide-react";
+import { Copy, FileText, Expand, Mail, RefreshCw, BookOpen, Newspaper, ScrollText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface VideoContent {
@@ -27,7 +27,7 @@ interface VideoContent {
 const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
   const [videos, setVideos] = useState<VideoContent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [modalId, setModalId] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<Record<string, { role: string; content: string }[]>>({});
   const [chatInput, setChatInput] = useState<Record<string, string>>({});
   const [chatLoading, setChatLoading] = useState<Record<string, boolean>>({});
@@ -104,13 +104,15 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
   if (loading) return <div className="text-white">Loading content...</div>;
   if (sortedVideos.length === 0) return <div className="text-white p-4">No content found. Try adding a YouTube URL to get started.</div>;
 
+  const modalVideo = sortedVideos.find(v => v.id === modalId);
+
   return (
     <div className="p-2">
       <div className="mb-4 text-xl font-bold text-white">YouTube Videos <span className="bg-chat-accent text-xs px-2 py-1 rounded-full ml-2">{sortedVideos.length}</span></div>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {sortedVideos.map((video) => (
           <div key={video.id} className="bg-chat-assistant rounded-lg shadow-lg flex flex-col">
-            <div className="relative cursor-pointer" onClick={() => setExpandedId(expandedId === video.id ? null : video.id)}>
+            <div className="relative cursor-pointer" onClick={() => setModalId(video.id)}>
               {video.thumbnail_url ? (
                 <img src={video.thumbnail_url} alt={video.title || video.video_url} className="rounded-t-lg w-full h-40 object-cover" />
               ) : (
@@ -122,56 +124,72 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
               <div className="font-bold text-lg truncate" title={video.title || video.video_url}>{video.title || video.video_url}</div>
               <div className="text-xs text-gray-400 mb-2 truncate">{video.summary || video.transcript?.slice(0, 80) || "No summary yet."}</div>
               <div className="flex gap-2 mt-auto">
-                <Button size="icon" variant="ghost" title="Transcript" className="border border-green-500 text-green-400"><span role="img" aria-label="transcript">📄</span></Button>
-                <Button size="icon" variant="ghost" title="Summary" className="border border-blue-500 text-blue-400"><span role="img" aria-label="summary">📝</span></Button>
-                <Button size="icon" variant="ghost" title="Blog" className="border border-purple-500 text-purple-400"><span role="img" aria-label="blog">📰</span></Button>
-                <Button size="icon" variant="ghost" title="Email" className="border border-pink-500 text-pink-400"><span role="img" aria-label="email">✉️</span></Button>
-                <Button size="icon" variant="ghost" title="Script" className="border border-yellow-500 text-yellow-400"><span role="img" aria-label="script">📜</span></Button>
+                <FileText size={20} className="text-white" aria-label="Transcript" />
+                <BookOpen size={20} className="text-white" aria-label="Summary" />
+                <Newspaper size={20} className="text-white" aria-label="Blog" />
+                <Mail size={20} className="text-white" aria-label="Email" />
+                <ScrollText size={20} className="text-white" aria-label="Script" />
               </div>
               <div className="flex gap-2 mt-2">
-                <Button size="icon" variant="outline" className="text-chat-highlight border-chat-highlight" onClick={() => setExpandedId(video.id)}>View</Button>
+                <Button size="icon" variant="outline" className="text-chat-highlight border-chat-highlight" onClick={() => setModalId(video.id)}>View</Button>
                 <Button size="icon" variant="destructive" className="ml-auto">Delete</Button>
               </div>
             </div>
-            {expandedId === video.id && (
-              <div className="bg-black/80 text-white p-4 rounded-b-lg mt-2">
-                <div className="mb-2 font-bold text-lg">{video.title || video.video_url}</div>
-                <div className="mb-2 text-xs text-gray-400">{video.video_url}</div>
-                <div className="mb-2"><b>Transcript:</b> <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">{video.transcript || "No transcript yet."}</div></div>
-                <div className="mb-2"><b>Summary:</b> <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px] flex-1">{video.summary || "No summary yet."}</div></div>
-                <div className="mb-2"><b>Blog Post (Basic):</b> <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">{video.blog_post_basic || "No blog post yet."}</div></div>
-                <div className="mb-2"><b>Blog Post (Premium):</b> <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">{video.blog_post_premium || "No premium blog post yet."}</div></div>
-                <div className="mb-2"><b>Social IG:</b> <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">{video.social_ig || "No IG post yet."}</div></div>
-                <div className="mb-2"><b>Email:</b> <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">{video.email || "No email content yet."}</div></div>
-                <div className="mb-2"><b>Script:</b> <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">{video.script || "No script yet."}</div></div>
-                <div className="mt-4">
-                  <div className="font-bold mb-2">Chat</div>
-                  <div className="max-h-64 overflow-y-auto bg-black/10 rounded p-2 mb-2" style={{ minHeight: 80 }}>
-                    {(chatMessages[video.id] || []).map((msg, idx) => (
-                      <div key={idx} className={`mb-2 ${msg.role === "user" ? "text-chat-highlight" : msg.role === "assistant" ? "text-green-400" : "text-red-400"}`}>
-                        <b>{msg.role === "user" ? "You" : msg.role === "assistant" ? "AI" : "System"}:</b> {msg.content}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    <input
-                      className="flex-1 rounded p-2 bg-black/20 text-white border border-chat-accent/30 focus:outline-none"
-                      placeholder="Ask a question about this video..."
-                      value={chatInput[video.id] || ""}
-                      onChange={e => setChatInput(prev => ({ ...prev, [video.id]: e.target.value }))}
-                      onKeyDown={e => { if (e.key === "Enter") handleChatSend(video); }}
-                      disabled={chatLoading[video.id]}
-                    />
-                    <Button onClick={() => handleChatSend(video)} disabled={chatLoading[video.id] || !(chatInput[video.id] || "").trim()}>
-                      {chatLoading[video.id] ? "Sending..." : "Send"}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         ))}
       </div>
+      {/* Modal Popup for Video Details/Chat */}
+      {modalVideo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+          <div className="bg-chat-assistant rounded-lg shadow-lg w-full max-w-2xl mx-auto relative">
+            <button className="absolute top-2 right-2 text-white hover:text-chat-highlight" onClick={() => setModalId(null)}><X size={28} /></button>
+            <div className="p-6">
+              <div className="flex gap-4 items-center mb-4">
+                {modalVideo.thumbnail_url ? (
+                  <img src={modalVideo.thumbnail_url} alt={modalVideo.title || modalVideo.video_url} className="rounded w-32 h-20 object-cover" />
+                ) : (
+                  <div className="w-32 h-20 bg-black/30 flex items-center justify-center rounded text-3xl text-white">🎬</div>
+                )}
+                <div>
+                  <div className="font-bold text-xl mb-1">{modalVideo.title || modalVideo.video_url}</div>
+                  <div className="text-xs text-gray-400 mb-1">{modalVideo.video_url}</div>
+                  <div className="text-xs text-gray-400">{modalVideo.created_at ? new Date(modalVideo.created_at).toLocaleDateString() : ""}</div>
+                </div>
+              </div>
+              <div className="mb-2"><b>Transcript:</b> <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">{modalVideo.transcript || "No transcript yet."}</div></div>
+              <div className="mb-2 flex items-center"><b>Summary:</b> <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px] flex-1 ml-2">{modalVideo.summary || "No summary yet."}</div><Button className="ml-2" size="icon" variant="ghost" onClick={() => handleGetSummary(modalVideo)}><RefreshCw size={20} /></Button></div>
+              <div className="mb-2"><b>Blog Post (Basic):</b> <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">{modalVideo.blog_post_basic || "No blog post yet."}</div></div>
+              <div className="mb-2"><b>Blog Post (Premium):</b> <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">{modalVideo.blog_post_premium || "No premium blog post yet."}</div></div>
+              <div className="mb-2"><b>Social IG:</b> <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">{modalVideo.social_ig || "No IG post yet."}</div></div>
+              <div className="mb-2"><b>Email:</b> <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">{modalVideo.email || "No email content yet."}</div></div>
+              <div className="mb-2"><b>Script:</b> <div className="whitespace-pre-line bg-black/20 rounded p-2 min-h-[40px]">{modalVideo.script || "No script yet."}</div></div>
+              <div className="mt-4">
+                <div className="font-bold mb-2">Chat</div>
+                <div className="max-h-64 overflow-y-auto bg-black/10 rounded p-2 mb-2" style={{ minHeight: 80 }}>
+                  {(chatMessages[modalVideo.id] || []).map((msg, idx) => (
+                    <div key={idx} className={`mb-2 ${msg.role === "user" ? "text-chat-highlight" : msg.role === "assistant" ? "text-green-400" : "text-red-400"}`}>
+                      <b>{msg.role === "user" ? "You" : msg.role === "assistant" ? "AI" : "System"}:</b> {msg.content}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    className="flex-1 rounded p-2 bg-black/20 text-white border border-chat-accent/30 focus:outline-none"
+                    placeholder="Ask a question about this video..."
+                    value={chatInput[modalVideo.id] || ""}
+                    onChange={e => setChatInput(prev => ({ ...prev, [modalVideo.id]: e.target.value }))}
+                    onKeyDown={e => { if (e.key === "Enter") handleChatSend(modalVideo); }}
+                    disabled={chatLoading[modalVideo.id]}
+                  />
+                  <Button onClick={() => handleChatSend(modalVideo)} disabled={chatLoading[modalVideo.id] || !(chatInput[modalVideo.id] || "").trim()}>
+                    {chatLoading[modalVideo.id] ? "Sending..." : "Send"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
