@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import EnhancedSidebar from "./sidebar/EnhancedSidebar";
+import ChatSidebar from "./ChatSidebar";
 import ChatWindow from "./ChatWindow";
 import HistoryViewer from "./HistoryViewer";
 import PwnedHistoryViewer from "./PwnedHistoryViewer";
@@ -43,15 +43,11 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
 
   const showPwnedHistoryButton = selectedModel === "pwned";
 
-  const handleModelSelection = (model: any) => {
-    setSelectedModel(model);
-  };
-
   return (
     <div className="flex h-screen overflow-hidden bg-chat">
       <ChatTheme currentTheme={currentTheme} />
 
-      <EnhancedSidebar
+      <ChatSidebar
         sessions={sessions}
         currentSessionId={currentSessionId}
         onSelectSession={(sessionId) => {
@@ -61,16 +57,24 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
           }
         }}
         onNewChat={createNewSession}
+        isOpen={isSidebarOpen}
+        onToggleSidebar={toggleSidebar}
         selectedModel={selectedModel}
-        onSelectModel={handleModelSelection}
+        onSelectModel={setSelectedModel}
         onLogout={() => handleLogout(onLogout, supabase)}
         onViewHistory={() => setIsHistoryOpen(true)}
-        userId={user?.id}
       />
       
       <div className="flex-1 flex flex-col">
         <div className="flex justify-between items-center p-2 border-b border-chat-assistant">
-          {isLoading && <Loader className="animate-spin mr-2 h-4 w-4 text-white" />}
+          <Button 
+            variant="ghost" 
+            size="sm"
+            className="md:hidden text-white"
+            onClick={toggleSidebar}
+          >
+            {isSidebarOpen ? "Hide Menu" : "Menu"}
+          </Button>
           
           <div className="flex items-center ml-auto">
             {showPwnedHistoryButton && (
@@ -84,6 +88,15 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
                 Pwned History
               </Button>
             )}
+            {isLoading && <Loader className="animate-spin mr-2 h-4 w-4 text-white" />}
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => handleLogout(onLogout, supabase)}
+              className="text-white hover:bg-chat-assistant"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
         </div>
         

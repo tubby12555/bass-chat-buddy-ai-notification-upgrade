@@ -2,158 +2,97 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
- 
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
- 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
- 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
- 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
- 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
- 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
- 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
- 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
- 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
- 
-    --radius: 0.5rem;
+    --background: 0 0% 0%;
+    --foreground: 0 0% 98%;
 
-    /* Default Chat Theme */
-    --chat-bg: #050505;
-    --chat-accent: #10A37F;
-    --chat-highlight: #10B981;
-    --chat-user-msg: #050505;
-    --chat-assistant-msg: #121212;
+    --card: 0 0% 0%;
+    --card-foreground: 0 0% 98%;
 
-    /* Sidebar Variables */
-    --sidebar: var(--chat-bg);
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-border: 217.2 32.6% 12%;
-    --sidebar-ring: 212.7 26.8% 50%;
-    --sidebar-accent: var(--chat-accent);
-    --sidebar-accent-foreground: 210 40% 98%;
-  }
- 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
- 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
- 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
- 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
- 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
- 
-    --muted: 217.2 32.6% 17.5%;
+    --popover: 0 0% 0%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 270 67% 63%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 0 0% 10%;
     --muted-foreground: 215 20.2% 65.1%;
- 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
- 
+
+    --accent: 0 0% 10%;
+    --accent-foreground: 0 0% 98%;
+
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
- 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
+    --ring: 0 0% 83.9%;
+    --sidebar-background: 0 0% 0%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Model theme variables */
+    --chat-bg: #000000;
+    --chat-accent: #8B5CF6;
+    --chat-highlight: #1EAEDB;
+    --chat-user-msg: #000000;
+    --chat-assistant-msg: #121212;
   }
 }
- 
+
 @layer base {
   * {
     @apply border-border;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-chat text-foreground;
   }
 }
 
-/* Chat Theme Variables */
-.chat-theme {
-  --bg-color: var(--chat-bg);
-  --accent-color: var(--chat-accent);
-  --highlight-color: var(--chat-highlight);
-  --user-msg-bg: var(--chat-user-msg);
-  --assistant-msg-bg: var(--chat-assistant-msg);
+/* Custom classes for the chat UI */
+@layer components {
+  .pixel-border {
+    @apply border-2 border-solid border-chat-highlight shadow-md;
+    image-rendering: pixelated;
+  }
+  
+  .pixel-text {
+    font-family: 'Press Start 2P', 'Courier New', monospace;
+    letter-spacing: -0.5px;
+  }
+  
+  .bg-chat {
+    background-color: var(--chat-bg);
+  }
+  
+  .bg-chat-accent {
+    background-color: var(--chat-accent);
+  }
+  
+  .text-chat-highlight {
+    color: var(--chat-highlight);
+  }
+  
+  .bg-chat-assistant {
+    background-color: var(--chat-assistant-msg);
+  }
+  
+  .border-chat-accent {
+    border-color: var(--chat-accent);
+  }
+  
+  .hover\:bg-chat-accent\/80:hover {
+    background-color: color-mix(in srgb, var(--chat-accent) 80%, transparent);
+  }
 }
-
-.bg-chat {
-  background-color: var(--chat-bg);
-}
-
-.bg-chat-accent {
-  background-color: var(--chat-accent);
-}
-
-.border-chat-accent {
-  border-color: var(--chat-accent);
-}
-
-.text-chat-accent {
-  color: var(--chat-accent);
-}
-
-.text-chat-highlight {
-  color: var(--chat-highlight);
-}
-
-.bg-chat-user {
-  background-color: var(--chat-user-msg);
-}
-
-.bg-chat-assistant {
-  background-color: var(--chat-assistant-msg);
-}
-
-.border-chat-assistant {
-  border-color: var(--chat-assistant-msg);
-}
-
-.bg-chat-sidebar {
-  background-color: var(--chat-bg);
-}
-
-/* Sidebar theme integration */
-.bg-sidebar {
-  background-color: var(--chat-bg);
-}
-
-.text-sidebar-foreground {
-  color: white;
-}
-
-.bg-sidebar-accent {
-  background-color: var(--chat-accent);
-}
-
-.text-sidebar-accent-foreground {
-  color: white;
-}
-
-.bg-sidebar-accent\/20 {
-  background-color: color-mix(in srgb, var(--chat-accent) 20%, transparent);
-}
-
