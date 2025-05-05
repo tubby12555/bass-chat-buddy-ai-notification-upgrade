@@ -5,6 +5,7 @@ import { useToast } from "@/components/ui/use-toast";
 import ImageFilter from "./ImageFilter";
 import ImageGrid from "./ImageGrid";
 import ImageDetailsModal from "./ImageDetailsModal";
+import { logEventToSupabase } from "@/utils/loggingUtils";
 
 interface ContentImage {
   id: string;
@@ -91,6 +92,9 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
     
     setProcessingImages(true);
     try {
+      // Log event
+      await logEventToSupabase(userId, 'process_images', { count: pendingCount });
+      
       // Call the edge function to process images
       const { error } = await supabase.functions.invoke('image-processor');
       
@@ -114,12 +118,13 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
     } finally {
       setProcessingImages(false);
     }
-  }, [checkPendingImages, fetchImages, toast]);
+  }, [checkPendingImages, fetchImages, toast, userId]);
 
   useEffect(() => {
     if (userId) {
       fetchImages();
-      processImages(); // Automatically process images when component mounts
+      // Automatically process images when component mounts
+      processImages(); 
     }
   }, [userId, fetchImages, processImages]);
 
@@ -135,7 +140,8 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
           table: 'content_images',
           filter: `user_id=eq.${userId}`
         },
-        () => {
+        (payload) => {
+          console.log("Real-time update received", payload);
           // When changes are detected, refresh the image list and check for pending images
           fetchImages();
           processImages();
@@ -162,11 +168,34 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
         filteredImages={filteredImages}
       />
       
+      {loading && (
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-pulse text-white flex items-center">
+            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Processing images...
+          </div>
+        </div>
+      )}
+      
       {!loading && filteredImages.length > 0 && (
         <ImageGrid 
           images={filteredImages}
           onSelectImage={setSelectedImage}
         />
+      )}
+      
+      {!loading && filteredImages.length === 0 && (
+        <div className="text-white p-8 text-center bg-chat-assistant/30 rounded-lg">
+          <p className="text-xl font-medium mb-2">No images found</p>
+          <p className="text-gray-400">
+            {tab === "all" 
+              ? "You haven't generated any images yet." 
+              : `You haven't generated any ${tab} images yet.`}
+          </p>
+        </div>
       )}
       
       <ImageDetailsModal

@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { logEventToSupabase } from "@/utils/loggingUtils";
 
 const ImagesPage: React.FC = () => {
   const [userId, setUserId] = React.useState<string | null>(null);
@@ -34,6 +35,9 @@ const ImagesPage: React.FC = () => {
     
     setIsProcessing(true);
     try {
+      // Log event
+      await logEventToSupabase(userId, 'manual_process_images', {});
+      
       const { error } = await supabase.functions.invoke('image-processor');
       
       if (error) {

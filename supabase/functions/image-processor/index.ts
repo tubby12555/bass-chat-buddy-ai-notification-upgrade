@@ -25,7 +25,7 @@ serve(async (req) => {
     const { data: pendingImages, error: fetchError } = await supabase
       .from('content_images')
       .select('id, user_id, temp_url, base64_image, content_type')
-      .or('permanent_url.is.null,and(temp_url.is.not.null,or(base64_image.is.not.null))')
+      .or('permanent_url.is.null,temp_url.is.not.null')
       .limit(10);
 
     if (fetchError) {
@@ -48,7 +48,7 @@ serve(async (req) => {
         let contentType = 'image/png';
         let ext = 'png';
         
-        // Get image data either from temp_url or base64_image
+        // Get image data from temp_url
         if (image.temp_url) {
           const res = await fetch(image.temp_url);
           if (!res.ok) {
