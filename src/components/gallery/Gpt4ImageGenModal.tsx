@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -31,6 +30,7 @@ const Gpt4ImageGenModal: React.FC<Gpt4ImageGenModalProps> = ({ open, onOpenChang
     e.preventDefault();
     setLoading(true);
     setError(null);
+    console.log('[Gpt4ImageGenModal] handleSubmit called', { prompt, style, userId });
     try {
       // Create an entry in content_images first
       const { data: imageData, error: insertError } = await supabase
@@ -46,19 +46,21 @@ const Gpt4ImageGenModal: React.FC<Gpt4ImageGenModalProps> = ({ open, onOpenChang
       
       if (insertError) throw insertError;
       
+      const payload = {
+        contentType: "gpt4.1imagegen",
+        prompt,
+        style,
+        userId,
+        imageId: imageData.id
+      };
+      console.log('[Gpt4ImageGenModal] Sending POST to webhook', payload);
       // Now send the generation request
       const res = await fetch("https://n8n.srv728397.hstgr.cloud/webhook/gemini", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contentType: "gpt4.1imagegen",
-          prompt,
-          style,
-          userId,
-          imageId: imageData.id // Send the image ID to link back to our record
-        })
+        body: JSON.stringify(payload)
       });
-      
+      console.log('[Gpt4ImageGenModal] POST response', res);
       if (!res.ok) throw new Error("Failed to generate image");
       
       toast({
@@ -73,7 +75,7 @@ const Gpt4ImageGenModal: React.FC<Gpt4ImageGenModalProps> = ({ open, onOpenChang
       let message = "Unknown error";
       if (err instanceof Error) message = err.message;
       setError(message);
-      
+      console.error('[Gpt4ImageGenModal] Error in handleSubmit', err);
       toast({
         title: "Error",
         description: message,
