@@ -31,6 +31,7 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
   const [chatMessages, setChatMessages] = useState<Record<string, { role: string; content: string }[]>>({});
   const [chatInput, setChatInput] = useState<Record<string, string>>({});
   const [chatLoading, setChatLoading] = useState<Record<string, boolean>>({});
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -111,6 +112,14 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [modalId]);
 
+  const handleDelete = async (videoId: string) => {
+    if (!window.confirm("Are you sure you want to delete this video and all its content?")) return;
+    setDeletingId(videoId);
+    const { error } = await supabase.from("video_content").delete().eq("id", videoId);
+    if (!error) setVideos((prev) => prev.filter((v) => v.id !== videoId));
+    setDeletingId(null);
+  };
+
   if (loading) return <div className="text-white">Loading content...</div>;
   if (sortedVideos.length === 0) return <div className="text-white p-4">No content found. Try adding a YouTube URL to get started.</div>;
 
@@ -142,7 +151,7 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
               </div>
               <div className="flex gap-2 mt-2">
                 <Button size="icon" variant="outline" className="text-chat-highlight border-chat-highlight" onClick={() => setModalId(video.id)}>View</Button>
-                <Button size="icon" variant="destructive" className="ml-auto">Delete</Button>
+                <Button size="icon" variant="destructive" className="ml-auto" onClick={() => handleDelete(video.id)} disabled={deletingId === video.id}>{deletingId === video.id ? "..." : "Delete"}</Button>
               </div>
             </div>
           </div>
