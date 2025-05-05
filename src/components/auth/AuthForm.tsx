@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,9 @@ interface AuthFormProps {
 const AuthForm = ({ onAuthSuccess }: AuthFormProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [profession, setProfession] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -50,18 +54,33 @@ const AuthForm = ({ onAuthSuccess }: AuthFormProps) => {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+          }
+        }
       });
 
       if (error) throw error;
 
-      // Insert profile row for new user
-      const { data: userData } = await supabase.auth.getUser();
-      if (userData?.user?.id) {
-        await supabase.from('profiles').insert({ user_id: userData.user.id });
+      // Insert profile manually (as a backup to the database trigger)
+      if (data?.user?.id) {
+        const { error: profileError } = await supabase.from('profiles').insert({ 
+          user_id: data.user.id,
+          profession: profession || null,
+          first_name: firstName || null,
+          last_name: lastName || null
+        });
+        
+        if (profileError) {
+          console.error("Error creating profile:", profileError);
+        }
       }
+
       toast({
         title: "Sign up successful",
         description: "Please check your email for a confirmation link",
@@ -134,6 +153,35 @@ const AuthForm = ({ onAuthSuccess }: AuthFormProps) => {
         <TabsContent value="signup">
           <form onSubmit={handleSignup}>
             <CardContent className="space-y-4 pt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Input
+                    id="firstName"
+                    placeholder="First Name"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="bg-chat-assistant text-white"
+                  />
+                </div>
+                <div>
+                  <Input
+                    id="lastName"
+                    placeholder="Last Name"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="bg-chat-assistant text-white"
+                  />
+                </div>
+              </div>
+              <div>
+                <Input
+                  id="profession"
+                  placeholder="Profession (optional)"
+                  value={profession}
+                  onChange={(e) => setProfession(e.target.value)}
+                  className="bg-chat-assistant text-white"
+                />
+              </div>
               <div className="space-y-2">
                 <Input
                   id="email"
@@ -142,7 +190,6 @@ const AuthForm = ({ onAuthSuccess }: AuthFormProps) => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  autoFocus
                   className="bg-chat-assistant text-white"
                 />
               </div>

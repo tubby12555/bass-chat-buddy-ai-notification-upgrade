@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,19 +20,32 @@ const App = () => {
       setIsAuthenticated(!!data.session);
 
       // Set up auth listener
-      supabase.auth.onAuthStateChange(async (_event, session) => {
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log("Auth state changed:", event);
         setIsAuthenticated(!!session);
+        
         if (session?.user) {
           const userId = session.user.id;
+          
           // Check if profile exists
           const { data: profile, error } = await supabase
             .from('profiles')
             .select('user_id')
             .eq('user_id', userId)
             .maybeSingle();
+            
+          // If no profile exists, create one
           if (!profile && !error) {
-            // Insert new profile with just user_id
-            await supabase.from('profiles').insert({ user_id: userId });
+            console.log("Creating new profile for user:", userId);
+            // Extract metadata from user if available
+            const firstName = session.user.user_metadata?.first_name;
+            const lastName = session.user.user_metadata?.last_name;
+            
+            await supabase.from('profiles').insert({ 
+              user_id: userId,
+              first_name: firstName || null,
+              last_name: lastName || null
+            });
           }
         }
       });
