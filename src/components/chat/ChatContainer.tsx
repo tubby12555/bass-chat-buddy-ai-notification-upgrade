@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import ChatSidebar from "./ChatSidebar";
@@ -63,6 +62,7 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
         onSelectModel={setSelectedModel}
         onLogout={() => handleLogout(onLogout, supabase)}
         onViewHistory={() => setIsHistoryOpen(true)}
+        userId={user?.id || "anonymous"}
       />
       
       <div className="flex-1 flex flex-col">

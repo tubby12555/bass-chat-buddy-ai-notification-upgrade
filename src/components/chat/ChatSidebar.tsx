@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { ModelType } from "@/types/chat";
 import MobileOverlay from "./sidebar/MobileOverlay";
@@ -9,6 +8,9 @@ import SessionList from "./sidebar/SessionList";
 import SidebarFooter from "./sidebar/SidebarFooter";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, Youtube, FileText, Image, FolderOpen, Calendar, Settings, User, LogOut } from "lucide-react";
+import { Dialog } from "@/components/ui/dialog";
+import YouTubeModal from "./YouTubeModal";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Session {
   id: string;
@@ -28,6 +30,7 @@ interface ChatSidebarProps {
   onSelectModel: (model: ModelType) => void;
   onLogout: () => void;
   onViewHistory: () => void;
+  userId: string;
 }
 
 const ChatSidebar = ({
@@ -40,15 +43,47 @@ const ChatSidebar = ({
   selectedModel,
   onSelectModel,
   onLogout,
-  onViewHistory
+  onViewHistory,
+  userId
 }: ChatSidebarProps) => {
   // State for tracking collapsible sections
   const [toolsOpen, setToolsOpen] = useState(true);
+  const [isYouTubeModalOpen, setIsYouTubeModalOpen] = useState(false);
+  const [isYouTubeLoading, setIsYouTubeLoading] = useState(false);
+  const { toast } = useToast();
 
   // Handle tool section clicks (placeholder for now)
   const handleToolClick = (tool: string) => {
+    if (tool === "youtube") {
+      setIsYouTubeModalOpen(true);
+      return;
+    }
     console.log(`Tool clicked: ${tool}`);
     // Implement actual navigation or action here
+  };
+
+  const handleYouTubeSubmit = async (videoUrl: string) => {
+    setIsYouTubeLoading(true);
+    try {
+      const webhookUrl = "https://n8n.srv728397.hstgr.cloud/webhook/gemini";
+      const res = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          videoUrl,
+          contentType: "youtube"
+        })
+      });
+      if (!res.ok) throw new Error("Failed to submit video");
+      toast({ title: "Video submitted!", description: "Waiting for transcript..." });
+      setIsYouTubeModalOpen(false);
+      // TODO: Start listening for real-time updates here
+    } catch (err) {
+      toast({ title: "Error", description: "Could not submit video.", variant: "destructive" });
+    } finally {
+      setIsYouTubeLoading(false);
+    }
   };
 
   return (
@@ -180,6 +215,17 @@ const ChatSidebar = ({
       </div>
       
       <MobileTrigger isOpen={isOpen} onToggle={onToggleSidebar} />
+      
+      {/* YouTube Modal (to be implemented) */}
+      <Dialog open={isYouTubeModalOpen} onOpenChange={setIsYouTubeModalOpen}>
+        <YouTubeModal
+          open={isYouTubeModalOpen}
+          onOpenChange={setIsYouTubeModalOpen}
+          userId={userId}
+          onSubmit={handleYouTubeSubmit}
+          loading={isYouTubeLoading}
+        />
+      </Dialog>
     </div>
   );
 };
