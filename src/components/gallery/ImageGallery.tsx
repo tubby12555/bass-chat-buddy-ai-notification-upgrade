@@ -21,6 +21,10 @@ interface ImageGalleryProps {
 
 const TABS = ["all", "flux", "gpt4.1image"];
 
+const isValidSupabaseUrl = (url: string | null | undefined) => {
+  return !!url && url.includes('.supabase.co/storage/');
+};
+
 const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
   const [images, setImages] = useState<ContentImage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,7 +62,11 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {filteredImages.map(img => (
             <Card key={img.id} className="bg-chat-assistant rounded-lg shadow-lg cursor-pointer overflow-hidden" onClick={() => setSelectedImage(img)}>
-              <img src={img.url} alt={img.prompt || "Image"} className="w-full h-40 object-cover" />
+              {isValidSupabaseUrl(img.url) ? (
+                <img src={img.url!} alt={img.prompt || "Image"} className="w-full h-40 object-cover" />
+              ) : (
+                <div className="w-full h-40 flex items-center justify-center bg-gray-800 text-gray-400">No Image</div>
+              )}
               <div className="p-2 text-xs text-white truncate">{img.prompt || "No prompt"}</div>
               <div className="px-2 pb-2 text-xs text-gray-400 truncate">{img.content_type || "uncategorized"}</div>
             </Card>
