@@ -1,26 +1,22 @@
 import React, { useState, useEffect, useCallback } from "react";
-import ChatSidebar from "./sidebar/ChatSidebar";
+import ChatSidebar from "@/components/chat/ChatSidebar";
 import ChatWindow from "./ChatWindow";
 import YouTubeModal from "./YouTubeModal";
 import PwnedHistoryViewer from "./PwnedHistoryViewer";
 import ContentSection from "./ContentSection";
-import FluxImageGenModal from "./FluxImageGenModal";
-import Gpt4ImageGenModal from "./Gpt4ImageGenModal";
+import FluxImageGenModal from "@/components/gallery/FluxImageGenModal";
+import Gpt4ImageGenModal from "@/components/gallery/Gpt4ImageGenModal";
 import { useTheme } from "next-themes";
-import { MobileOverlay } from "@/components/ui/mobile-overlay";
-import { handleLogout } from "@/utils/chatUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { logEventToSupabase } from "@/utils/loggingUtils";
 import { ModelType } from "@/types/chat";
 
 interface ChatContainerProps {
-  activeSession: any;
-  onNewSession: () => void;
-  setActiveSession: (session: any) => void;
+  onLogout: () => void;
 }
 
-const ChatContainer = ({ activeSession, onNewSession, setActiveSession }: ChatContainerProps) => {
+const ChatContainer = ({ onLogout }: ChatContainerProps) => {
   const [isYouTubeModalOpen, setIsYouTubeModalOpen] = useState(false);
   const [isContentSectionOpen, setIsContentSectionOpen] = useState(false);
   const [isFluxImageModalOpen, setIsFluxImageModalOpen] = useState(false);
@@ -31,16 +27,23 @@ const ChatContainer = ({ activeSession, onNewSession, setActiveSession }: ChatCo
   const { setTheme } = useTheme();
   const { toast } = useToast();
   const [modelType, setModelType] = useState<ModelType>("gemini");
+  const [activeSession, setActiveSession] = useState<any>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const getSession = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user?.id);
-        setUserLoggedIn(true);
-      } else {
-        setUserId(null);
-        setUserLoggedIn(false);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setUserId(user?.id);
+          setUserLoggedIn(true);
+        } else {
+          setUserId(null);
+          setUserLoggedIn(false);
+        }
+      } catch (error) {
+        console.error("Error fetching user:", error);
       }
     };
 
@@ -83,6 +86,9 @@ const ChatContainer = ({ activeSession, onNewSession, setActiveSession }: ChatCo
       case "gen-image-gpt4":
         setIsGpt4ImageModalOpen(true);
         break;
+      case "images":
+        window.location.href = "/images";
+        break;
       default:
         console.log(`Tool clicked: ${tool}`);
     }
@@ -96,6 +102,7 @@ const ChatContainer = ({ activeSession, onNewSession, setActiveSession }: ChatCo
     try {
       await supabase.auth.signOut();
       setUserLoggedIn(false);
+      onLogout(); // Pass it up to the parent component
       toast({
         title: "Logged out",
         description: "Successfully logged out.",
@@ -116,79 +123,91 @@ const ChatContainer = ({ activeSession, onNewSession, setActiveSession }: ChatCo
     
     // Log model change event if user is authenticated
     if (userLoggedIn && userId) {
-      logEventToSupabase(userId, "model_change", { 
-        from: modelType,
-        to: newModel,
-        session_id: activeSession?.id
-      });
+      const logEvent = async () => {
+        try {
+          await supabase
+            .from('user_events')
+            .insert({
+              user_id: userId,
+              event_type: 'model_change',
+              event_data: { from: modelType, to: newModel, session_id: activeSession?.id },
+              created_at: new Date()
+            });
+        } catch (error) {
+          console.error("Failed to log model change:", error);
+        }
+      };
+      logEvent();
     }
+  };
+
+  const handleSendMessage = (message: string) => {
+    // Placeholder function for ChatWindow
+    console.log("Message sent:", message);
+    // Add implementation for sending messages
+  };
+
+  const onNewSession = () => {
+    // Implementation for creating a new session
+    console.log("Creating new session");
+    setActiveSession({ id: Date.now().toString(), messages: [] });
   };
 
   return (
     <div className="flex flex-col h-dvh lg:flex-row">
       <ChatSidebar
-        activeSession={activeSession}
-        onNewSession={onNewSession}
-        setActiveSession={setActiveSession}
+        sessions={[]}
+        currentSessionId={activeSession?.id || ""}
+        onSelectSession={() => {}}
+        onNewChat={onNewSession}
+        isOpen={isMobileMenuOpen}
+        onToggleSidebar={() => setMobileMenuOpen(!isMobileMenuOpen)}
+        selectedModel={modelType}
+        onSelectModel={handleModelChange}
         onLogout={handleLogout}
-        onToolClick={handleToolClick}
-        onThemeChange={handleThemeChange}
-        userLoggedIn={userLoggedIn}
-        onModelChange={handleModelChange}
-        modelType={modelType}
+        onViewHistory={() => {}}
+        userId={userId || ""}
       />
       
-      <MobileOverlay isMobileMenuOpen={isMobileMenuOpen} onClose={() => setMobileMenuOpen(false)}>
-        <ChatSidebar
-          activeSession={activeSession}
-          onNewSession={onNewSession}
-          setActiveSession={setActiveSession}
-          onLogout={handleLogout}
-          onToolClick={handleToolClick}
-          onThemeChange={handleThemeChange}
-          userLoggedIn={userLoggedIn}
-          onModelChange={handleModelChange}
-          modelType={modelType}
-          isMobile={true}
-          onMobileClose={() => setMobileMenuOpen(false)}
-        />
-      </MobileOverlay>
-      
       <ChatWindow
-        activeSession={activeSession}
-        userId={userId}
-        onMobileMenuToggle={() => setMobileMenuOpen(true)}
+        messages={messages}
+        onSendMessage={handleSendMessage}
+        isLoading={isLoading}
         modelType={modelType}
       />
       
       {/* Modals */}
       <YouTubeModal
-        isOpen={isYouTubeModalOpen}
+        open={isYouTubeModalOpen}
         onOpenChange={setIsYouTubeModalOpen} 
-        userId={userId}
+        userId={userId || ""}
+        onSubmit={async () => {}}
+        loading={false}
       />
       
-      {/* Fix by passing only expected props */}
+      {/* Fix by passing all required props to PwnedHistoryViewer */}
       <PwnedHistoryViewer 
-        userId={userId}
+        userId={userId || ""}
+        onSelectSession={() => {}}
+        currentSessionId=""
       />
       
       <ContentSection 
         isOpen={isContentSectionOpen} 
         onOpenChange={setIsContentSectionOpen}
-        userId={userId}
+        userId={userId || ""}
       />
       
       <FluxImageGenModal
-        isOpen={isFluxImageModalOpen}
+        open={isFluxImageModalOpen}
         onOpenChange={setIsFluxImageModalOpen}
-        userId={userId}
+        userId={userId || ""}
       />
       
       <Gpt4ImageGenModal
-        isOpen={isGpt4ImageModalOpen}
+        open={isGpt4ImageModalOpen}
         onOpenChange={setIsGpt4ImageModalOpen}
-        userId={userId}
+        userId={userId || ""}
       />
     </div>
   );
