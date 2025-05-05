@@ -69,14 +69,10 @@ const PwnedHistoryViewer = ({
       
       if (data) {
         data.forEach((item) => {
-          // Ensure all required fields are present, adding default values if needed
+          // Type assertion to ensure model_type is of type ModelType
           const chatData: PwnedChatData = {
-            id: item.id,
-            user_id: item.user_id,
-            session_id: item.session_id,
-            content: item.content,
-            model_type: (item.model_type as ModelType) || "pwned",
-            created_at: item.created_at || new Date().toISOString()
+            ...item,
+            model_type: item.model_type as ModelType
           };
 
           if (!sessionMap[item.session_id]) {
