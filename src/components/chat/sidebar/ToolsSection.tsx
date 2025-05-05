@@ -61,6 +61,15 @@ const ToolsSection = ({ onToolClick }: ToolsSectionProps) => {
           <span>Gen Image with Flux</span>
         </div>
         
+        {/* Gen Image with GPT-4.1 */}
+        <div 
+          className="flex items-center px-4 py-2 text-white hover:bg-chat-accent/20 cursor-pointer"
+          onClick={() => handleToolClick("gen-image-gpt4")}
+        >
+          <Image size={16} className="mr-2" />
+          <span>Gen Image with GPT-4.1</span>
+        </div>
+        
         {/* Images */}
         <div 
           className="flex items-center px-4 py-2 text-white hover:bg-chat-accent/20 cursor-pointer"

@@ -12,6 +12,7 @@ import { useToast } from "@/components/ui/use-toast";
 import ToolsSection from "./sidebar/ToolsSection";
 import SettingsSection from "./sidebar/SettingsSection";
 import FluxImageGenModal from "@/components/gallery/FluxImageGenModal";
+import Gpt4ImageGenModal from "@/components/gallery/Gpt4ImageGenModal";
 
 interface Session {
   id: string;
@@ -50,6 +51,7 @@ const ChatSidebar = ({
   const [isYouTubeModalOpen, setIsYouTubeModalOpen] = useState(false);
   const [isYouTubeLoading, setIsYouTubeLoading] = useState(false);
   const [isFluxModalOpen, setIsFluxModalOpen] = useState(false);
+  const [isGpt4ModalOpen, setIsGpt4ModalOpen] = useState(false);
   const { toast } = useToast();
 
   // Handle tool section clicks
@@ -60,6 +62,10 @@ const ChatSidebar = ({
     }
     if (tool === "gen-image-flux") {
       setIsFluxModalOpen(true);
+      return;
+    }
+    if (tool === "gen-image-gpt4") {
+      setIsGpt4ModalOpen(true);
       return;
     }
     if (tool === "images") {
@@ -159,6 +165,8 @@ const ChatSidebar = ({
       </Dialog>
       {/* Flux Image Gen Modal */}
       <FluxImageGenModal open={isFluxModalOpen} onOpenChange={setIsFluxModalOpen} userId={userId} />
+      {/* GPT-4.1 Image Gen Modal */}
+      <Gpt4ImageGenModal open={isGpt4ModalOpen} onOpenChange={setIsGpt4ModalOpen} userId={userId} />
     </div>
   );
 };
