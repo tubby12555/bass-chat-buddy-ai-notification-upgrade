@@ -126,6 +126,7 @@ export type Database = {
         Row: {
           blog: string | null
           bucket: string
+          content_type: string | null
           created_at: string
           email: string | null
           id: string
@@ -139,11 +140,11 @@ export type Database = {
           updated_at: string
           url: string
           user_id: string
-          content_type: string | null
         }
         Insert: {
           blog?: string | null
           bucket: string
+          content_type?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -157,11 +158,11 @@ export type Database = {
           updated_at?: string
           url: string
           user_id: string
-          content_type?: string | null
         }
         Update: {
           blog?: string | null
           bucket?: string
+          content_type?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -175,7 +176,6 @@ export type Database = {
           updated_at?: string
           url?: string
           user_id?: string
-          content_type?: string | null
         }
         Relationships: []
       }
@@ -627,69 +627,69 @@ export type Database = {
       }
       video_content: {
         Row: {
-          id: string;
-          user_id: string;
-          session_id?: string | null;
-          video_url: string;
-          video_id?: string | null;
-          title?: string | null;
-          thumbnail_url?: string | null;
-          transcript?: string | null;
-          summary?: string | null;
-          blog_post_basic?: string | null;
-          blog_post_premium?: string | null;
-          social_ig?: string | null;
-          email?: string | null;
-          script?: string | null;
-          created_at: string;
-          updated_at: string;
-        };
+          blog_post_basic: string | null
+          blog_post_premium: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          script: string | null
+          session_id: string | null
+          social_ig: string | null
+          summary: string | null
+          thumbnail_url: string | null
+          title: string | null
+          transcript: string | null
+          updated_at: string | null
+          user_id: string
+          video_id: string | null
+          video_url: string
+        }
         Insert: {
-          id?: string;
-          user_id: string;
-          session_id?: string | null;
-          video_url: string;
-          video_id?: string | null;
-          title?: string | null;
-          thumbnail_url?: string | null;
-          transcript?: string | null;
-          summary?: string | null;
-          blog_post_basic?: string | null;
-          blog_post_premium?: string | null;
-          social_ig?: string | null;
-          email?: string | null;
-          script?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
+          blog_post_basic?: string | null
+          blog_post_premium?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          script?: string | null
+          session_id?: string | null
+          social_ig?: string | null
+          summary?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          transcript?: string | null
+          updated_at?: string | null
+          user_id: string
+          video_id?: string | null
+          video_url: string
+        }
         Update: {
-          id?: string;
-          user_id?: string;
-          session_id?: string | null;
-          video_url?: string;
-          video_id?: string | null;
-          title?: string | null;
-          thumbnail_url?: string | null;
-          transcript?: string | null;
-          summary?: string | null;
-          blog_post_basic?: string | null;
-          blog_post_premium?: string | null;
-          social_ig?: string | null;
-          email?: string | null;
-          script?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
+          blog_post_basic?: string | null
+          blog_post_premium?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          script?: string | null
+          session_id?: string | null
+          social_ig?: string | null
+          summary?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          transcript?: string | null
+          updated_at?: string | null
+          user_id?: string
+          video_id?: string | null
+          video_url?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "video_content_user_id_fkey";
-            columns: ["user_id"];
-            isOneToOne: false;
-            referencedRelation: "profiles";
-            referencedColumns: ["user_id"];
-          }
-        ];
-      };
+            foreignKeyName: "video_content_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
     }
     Views: {
       content_items_legacy: {

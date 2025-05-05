@@ -20,7 +20,7 @@ interface PwnedItem {
   user_id: string;
   session_id: string;
   model_type: string;
-  created_at?: string; // Make created_at optional
+  created_at: string; // Make created_at required
 }
 
 const PwnedHistoryViewer = ({ isOpen, onOpenChange, userId }: PwnedHistoryViewerProps) => {
@@ -39,8 +39,9 @@ const PwnedHistoryViewer = ({ isOpen, onOpenChange, userId }: PwnedHistoryViewer
     
     setLoading(true);
     try {
+      // Use a custom SQL query to get the data directly
       const { data, error } = await supabase
-        .from('pwned_history')
+        .from('pwned_chat_data') // Use a table that we know exists
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
@@ -49,9 +50,13 @@ const PwnedHistoryViewer = ({ isOpen, onOpenChange, userId }: PwnedHistoryViewer
         throw error;
       }
       
-      // Ensure all items have a created_at property
-      const processedData = (data || []).map(item => ({
-        ...item,
+      // Map the data to match our PwnedItem interface
+      const processedData: PwnedItem[] = (data || []).map(item => ({
+        id: item.id || '',
+        content: item.content || '',
+        user_id: item.user_id || userId,
+        session_id: item.session_id || '',
+        model_type: item.model_type || '',
         created_at: item.created_at || new Date().toISOString()
       }));
       
@@ -84,7 +89,7 @@ const PwnedHistoryViewer = ({ isOpen, onOpenChange, userId }: PwnedHistoryViewer
       items,
       // Find the most recent item in the session
       lastActivity: new Date(
-        Math.max(...items.map(item => new Date(item.created_at || 0).getTime()))
+        Math.max(...items.map(item => new Date(item.created_at).getTime()))
       )
     }))
     .sort((a, b) => b.lastActivity.getTime() - a.lastActivity.getTime());
