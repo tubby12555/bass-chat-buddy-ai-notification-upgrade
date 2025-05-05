@@ -11,6 +11,7 @@ import YouTubeModal from "./YouTubeModal";
 import { useToast } from "@/components/ui/use-toast";
 import ToolsSection from "./sidebar/ToolsSection";
 import SettingsSection from "./sidebar/SettingsSection";
+import FluxImageGenModal from "@/components/gallery/FluxImageGenModal";
 
 interface Session {
   id: string;
@@ -48,12 +49,17 @@ const ChatSidebar = ({
 }: ChatSidebarProps) => {
   const [isYouTubeModalOpen, setIsYouTubeModalOpen] = useState(false);
   const [isYouTubeLoading, setIsYouTubeLoading] = useState(false);
+  const [isFluxModalOpen, setIsFluxModalOpen] = useState(false);
   const { toast } = useToast();
 
   // Handle tool section clicks
   const handleToolClick = (tool: string) => {
     if (tool === "youtube") {
       setIsYouTubeModalOpen(true);
+      return;
+    }
+    if (tool === "gen-image-flux") {
+      setIsFluxModalOpen(true);
       return;
     }
     if (tool === "images") {
@@ -151,6 +157,8 @@ const ChatSidebar = ({
           loading={isYouTubeLoading}
         />
       </Dialog>
+      {/* Flux Image Gen Modal */}
+      <FluxImageGenModal open={isFluxModalOpen} onOpenChange={setIsFluxModalOpen} userId={userId} />
     </div>
   );
 };

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, Youtube, FileText, Image, FolderOpen, Calendar } from "lucide-react";
@@ -51,6 +50,15 @@ const ToolsSection = ({ onToolClick }: ToolsSectionProps) => {
         >
           <FileText size={16} className="mr-2" />
           <span>Notes</span>
+        </div>
+        
+        {/* Gen Image with Flux */}
+        <div 
+          className="flex items-center px-4 py-2 text-white hover:bg-chat-accent/20 cursor-pointer"
+          onClick={() => handleToolClick("gen-image-flux")}
+        >
+          <Image size={16} className="mr-2" />
+          <span>Gen Image with Flux</span>
         </div>
         
         {/* Images */}
