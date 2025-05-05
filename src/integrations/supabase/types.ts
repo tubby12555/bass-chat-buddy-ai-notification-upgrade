@@ -9,6 +9,41 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      blog: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          id: string
+          title: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          title?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           color: string | null
@@ -33,6 +68,24 @@ export type Database = {
           name?: string
           order_num?: number | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      chat_data: {
+        Row: {
+          id: number
+          message: Json
+          session_id: string
+        }
+        Insert: {
+          id?: number
+          message: Json
+          session_id: string
+        }
+        Update: {
+          id?: number
+          message?: Json
+          session_id?: string
         }
         Relationships: []
       }
@@ -312,7 +365,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_notes_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -372,15 +433,58 @@ export type Database = {
           session_id?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_pwned_chat_data_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      script: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          id: string
+          title: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          title?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "script_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       summaries: {
         Row: {
           created_at: string
           id: string
           json: Json
-          summary: string | null
-          transcript_id: string | null
+          summary: string
+          transcript_id: string
           updated_at: string
           user_id: string
           video_id: string | null
@@ -390,8 +494,8 @@ export type Database = {
           created_at?: string
           id?: string
           json: Json
-          summary?: string | null
-          transcript_id?: string | null
+          summary: string
+          transcript_id: string
           updated_at?: string
           user_id: string
           video_id?: string | null
@@ -401,21 +505,70 @@ export type Database = {
           created_at?: string
           id?: string
           json?: Json
-          summary?: string | null
-          transcript_id?: string | null
+          summary?: string
+          transcript_id?: string
           updated_at?: string
           user_id?: string
           video_id?: string | null
           video_url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_summaries_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          status: string | null
+          title: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          status?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          status?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       transcripts: {
         Row: {
           created_at: string
           id: string
-          source_url: string | null
-          text: string
+          source_url: string
+          transcript: string | null
           updated_at: string
           user_id: string
           video_id: string | null
@@ -424,8 +577,8 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
-          source_url?: string | null
-          text: string
+          source_url: string
+          transcript?: string | null
           updated_at?: string
           user_id: string
           video_id?: string | null
@@ -434,14 +587,22 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
-          source_url?: string | null
-          text?: string
+          source_url?: string
+          transcript?: string | null
           updated_at?: string
           user_id?: string
           video_id?: string | null
           video_url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_transcripts_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       users: {
         Row: {

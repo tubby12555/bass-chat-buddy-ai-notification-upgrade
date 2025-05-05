@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { ModelType } from "@/types/chat";
 import MobileOverlay from "./sidebar/MobileOverlay";
@@ -11,6 +12,7 @@ import { ChevronDown, Youtube, FileText, Image, FolderOpen, Calendar, Settings, 
 import { Dialog } from "@/components/ui/dialog";
 import YouTubeModal from "./YouTubeModal";
 import { useToast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface Session {
   id: string;
@@ -51,13 +53,20 @@ const ChatSidebar = ({
   const [isYouTubeModalOpen, setIsYouTubeModalOpen] = useState(false);
   const [isYouTubeLoading, setIsYouTubeLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
-  // Handle tool section clicks (placeholder for now)
+  // Handle tool section clicks
   const handleToolClick = (tool: string) => {
     if (tool === "youtube") {
       setIsYouTubeModalOpen(true);
       return;
     }
+    
+    if (tool === "content") {
+      navigate("/content");
+      return;
+    }
+    
     console.log(`Tool clicked: ${tool}`);
     // Implement actual navigation or action here
   };
@@ -216,7 +225,7 @@ const ChatSidebar = ({
       
       <MobileTrigger isOpen={isOpen} onToggle={onToggleSidebar} />
       
-      {/* YouTube Modal (to be implemented) */}
+      {/* YouTube Modal */}
       <Dialog open={isYouTubeModalOpen} onOpenChange={setIsYouTubeModalOpen}>
         <YouTubeModal
           open={isYouTubeModalOpen}

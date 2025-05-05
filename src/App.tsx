@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import ContentPage from "./pages/ContentPage";
 import { useToast } from "@/components/ui/use-toast";
 
 const queryClient = new QueryClient();
@@ -107,6 +108,7 @@ const App = () => {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} />} />
+            <Route path="/content" element={<ContentPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
