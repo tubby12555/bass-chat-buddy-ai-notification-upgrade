@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -8,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Copy } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import MessageBubble from "./MessageBubble";
-import { Json } from "@/integrations/supabase/types";
 
 interface PwnedChatData {
   id: string;
@@ -16,6 +16,7 @@ interface PwnedChatData {
   session_id: string;
   content: string;
   model_type: string;
+  created_at?: string;
 }
 
 interface PwnedHistoryViewerProps {
@@ -31,7 +32,6 @@ const PwnedHistoryViewer = ({
 }: PwnedHistoryViewerProps) => {
   const [sessions, setSessions] = useState<Record<string, PwnedChatData[]>>({});
   const [sessionIds, setSessionIds] = useState<string[]>([]);
-  const [currentSessionIndex, setCurrentSessionIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -84,7 +84,7 @@ const PwnedHistoryViewer = ({
         if (!groupedSessions[message.session_id]) {
           groupedSessions[message.session_id] = [];
         }
-        groupedSessions[message.session_id].push(message);
+        groupedSessions[message.session_id].push(message as PwnedChatData);
       });
 
       setSessions(groupedSessions);
@@ -162,7 +162,7 @@ const PwnedHistoryViewer = ({
                       <ScrollArea className="h-[calc(80vh-10rem)] w-full">
                         <div className="space-y-6 p-4">
                           {sessions[sessionId].map((message) => {
-                            const timestamp = message.timestamp ? message.timestamp : Date.now();
+                            const timestamp = message.created_at ? new Date(message.created_at).getTime() : Date.now();
                             return (
                               <div key={message.id}>
                                 <MessageBubble

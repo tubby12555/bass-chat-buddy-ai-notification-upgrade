@@ -1,3 +1,4 @@
+
 import { useToast } from "@/components/ui/use-toast";
 import { ModelType } from "@/types/chat";
 import { supabase } from "@/integrations/supabase/client";

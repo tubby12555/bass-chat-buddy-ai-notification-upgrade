@@ -383,33 +383,24 @@ export type Database = {
       }
       pwned_chat_data: {
         Row: {
-          created_at: string
+          content: string
           id: string
-          message: string
-          metadata: Json | null
-          role: string
+          model_type: string | null
           session_id: string
-          updated_at: string
           user_id: string
         }
         Insert: {
-          created_at?: string
+          content: string
           id?: string
-          message: string
-          metadata?: Json | null
-          role: string
+          model_type?: string | null
           session_id: string
-          updated_at?: string
           user_id: string
         }
         Update: {
-          created_at?: string
+          content?: string
           id?: string
-          message?: string
-          metadata?: Json | null
-          role?: string
+          model_type?: string | null
           session_id?: string
-          updated_at?: string
           user_id?: string
         }
         Relationships: []
