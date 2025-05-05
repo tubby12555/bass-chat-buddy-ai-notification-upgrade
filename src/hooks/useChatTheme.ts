@@ -41,31 +41,41 @@ export const useChatTheme = (selectedModel: ModelType, currentSessionId: string)
     // Update tailwind classes
     const root = document.documentElement;
     root.style.setProperty('--primary', theme.accent);
+    
+    // Don't return anything here (or return undefined)
   }, [selectedModel]);
 
-  // Try to find a previous session with the current model after model changes
+  // Fix: This useEffect was incorrectly returning a value instead of a cleanup function
   useEffect(() => {
-    const savedSessions = localStorage.getItem('chatSessions');
-    if (savedSessions) {
-      try {
-        const parsed = JSON.parse(savedSessions);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const theme = MODEL_THEMES[selectedModel];
-          
-          // Find the last session with this model
-          const lastSessionWithModel = parsed.find(s => 
-            s.messages.some(m => m.content.includes(`Using ${theme.name} model`))
-          );
-          
-          if (lastSessionWithModel && currentSessionId === "") {
-            return lastSessionWithModel.id;
+    // Find previous session with current model logic can stay here
+    // But we shouldn't return anything except a cleanup function
+    const checkPreviousSessions = () => {
+      const savedSessions = localStorage.getItem('chatSessions');
+      if (savedSessions) {
+        try {
+          const parsed = JSON.parse(savedSessions);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const theme = MODEL_THEMES[selectedModel];
+            
+            // Find the last session with this model
+            const lastSessionWithModel = parsed.find(s => 
+              s.messages.some(m => m.content.includes(`Using ${theme.name} model`))
+            );
+            
+            // This is just for checking; we don't return anything from this effect
+            return lastSessionWithModel?.id;
           }
+        } catch (e) {
+          console.error("Error parsing saved sessions:", e);
         }
-      } catch (e) {
-        console.error("Error parsing saved sessions:", e);
       }
-    }
-    return null;
+      return null;
+    };
+    
+    // Execute the function but don't return its result
+    checkPreviousSessions();
+    
+    // Either return nothing (undefined) or a cleanup function if needed
   }, [selectedModel, currentSessionId]);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
