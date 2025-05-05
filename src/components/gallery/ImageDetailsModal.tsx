@@ -1,0 +1,139 @@
+
+import React from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Copy, Download, ExternalLink, Image } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+
+interface ContentImage {
+  id: string;
+  user_id: string;
+  permanent_url: string | null;
+  content_type: string | null;
+  prompt: string | null;
+  style: string | null;
+  blog: string | null;
+  created_at: string;
+}
+
+interface ImageDetailsModalProps {
+  selectedImage: ContentImage | null;
+  setSelectedImage: (image: ContentImage | null) => void;
+}
+
+const isValidSupabaseUrl = (url: string | null | undefined): boolean => {
+  return !!url && url.includes('.supabase.co/storage/');
+};
+
+const ImageDetailsModal: React.FC<ImageDetailsModalProps> = ({ 
+  selectedImage, 
+  setSelectedImage 
+}) => {
+  const { toast } = useToast();
+
+  const handleCopyUrl = (url: string) => {
+    navigator.clipboard.writeText(url);
+    toast({
+      title: "URL Copied",
+      description: "Image URL copied to clipboard",
+    });
+  };
+
+  const handleDownloadImage = (url: string, filename: string = "image.jpg") => {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  if (!selectedImage) return null;
+
+  return (
+    <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+      <DialogContent className="max-w-3xl bg-chat-assistant border-chat-highlight">
+        <DialogHeader>
+          <DialogTitle className="text-white">Image Details</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col md:flex-row gap-6">
+          <div className="md:w-1/2">
+            {isValidSupabaseUrl(selectedImage.permanent_url) ? (
+              <img 
+                src={selectedImage.permanent_url!} 
+                alt={selectedImage.prompt || "Generated image"} 
+                className="w-full rounded-lg object-contain max-h-[70vh] bg-black" 
+              />
+            ) : (
+              <div className="w-full h-60 flex items-center justify-center bg-gray-800 text-gray-400 rounded-lg">
+                <Image size={48} />
+              </div>
+            )}
+          </div>
+          <div className="md:w-1/2 text-white">
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-400 mb-1">Prompt</h3>
+                <p className="text-sm">{selectedImage.prompt || "None"}</p>
+              </div>
+              
+              {selectedImage.style && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-400 mb-1">Style</h3>
+                  <p className="text-sm">{selectedImage.style}</p>
+                </div>
+              )}
+              
+              <div>
+                <h3 className="text-sm font-semibold text-gray-400 mb-1">Type</h3>
+                <p className="text-sm">{selectedImage.content_type || "uncategorized"}</p>
+              </div>
+              
+              {selectedImage.content_type === "gpt4.1image" && selectedImage.blog && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-400 mb-1">Blog</h3>
+                  <div className="bg-black/30 p-3 rounded text-sm max-h-60 overflow-y-auto whitespace-pre-line">
+                    {selectedImage.blog}
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex flex-wrap gap-2 pt-2">
+                {isValidSupabaseUrl(selectedImage.permanent_url) && (
+                  <>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex items-center gap-1"
+                      onClick={() => handleCopyUrl(selectedImage.permanent_url!)}
+                    >
+                      <Copy size={16} /> Copy URL
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="flex items-center gap-1"
+                      onClick={() => window.open(selectedImage.permanent_url!, "_blank")}
+                    >
+                      <ExternalLink size={16} /> Open
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="flex items-center gap-1"
+                      onClick={() => handleDownloadImage(selectedImage.permanent_url!)}
+                    >
+                      <Download size={16} /> Download
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default ImageDetailsModal;

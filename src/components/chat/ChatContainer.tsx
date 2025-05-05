@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import ChatSidebar from "./ChatSidebar";
@@ -118,7 +117,7 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
       />
 
       <PwnedHistoryViewer
-        open={isPwnedHistoryOpen}
+        isOpen={isPwnedHistoryOpen} 
         onOpenChange={setIsPwnedHistoryOpen}
         userId={user?.id || "anonymous"}
       />
