@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
 
 interface YouTubeModalProps {
   open: boolean;
@@ -27,31 +28,33 @@ const YouTubeModal: React.FC<YouTubeModalProps> = ({ open, onOpenChange, userId,
   };
 
   return (
-    <DialogContent>
-      <DialogHeader>
-        <DialogTitle>Add YouTube Video</DialogTitle>
-        <DialogDescription>Paste a YouTube URL to fetch its transcript and content.</DialogDescription>
-      </DialogHeader>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Input
-          type="url"
-          placeholder="YouTube Video URL"
-          value={videoUrl}
-          onChange={e => setVideoUrl(e.target.value)}
-          disabled={loading}
-          required
-        />
-        {error && <div className="text-red-500 text-sm">{error}</div>}
-        <DialogFooter>
-          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={loading}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={loading}>
-            {loading ? "Submitting..." : "Submit"}
-          </Button>
-        </DialogFooter>
-      </form>
-    </DialogContent>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add YouTube Video</DialogTitle>
+          <DialogDescription>Paste a YouTube URL to fetch its transcript and content.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            type="url"
+            placeholder="YouTube Video URL"
+            value={videoUrl}
+            onChange={e => setVideoUrl(e.target.value)}
+            disabled={loading}
+            required
+          />
+          {error && <div className="text-red-500 text-sm">{error}</div>}
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={loading}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? "Submitting..." : "Submit"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };
 
