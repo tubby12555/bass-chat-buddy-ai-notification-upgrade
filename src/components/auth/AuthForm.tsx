@@ -54,6 +54,7 @@ const AuthForm = ({ onAuthSuccess }: AuthFormProps) => {
     setIsLoading(true);
 
     try {
+      // First sign up the user
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -61,23 +62,31 @@ const AuthForm = ({ onAuthSuccess }: AuthFormProps) => {
           data: {
             first_name: firstName,
             last_name: lastName,
+            profession: profession,  // Store profession in metadata too
           }
         }
       });
 
       if (error) throw error;
 
-      // Insert profile manually (as a backup to the database trigger)
+      // Manually create the profile to ensure it exists
       if (data?.user?.id) {
+        console.log("Creating profile for new user:", data.user.id);
+        
         const { error: profileError } = await supabase.from('profiles').insert({ 
           user_id: data.user.id,
           profession: profession || null,
           first_name: firstName || null,
-          last_name: lastName || null
+          last_name: lastName || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         });
         
         if (profileError) {
-          console.error("Error creating profile:", profileError);
+          console.error("Error creating profile during signup:", profileError);
+          // Continue anyway - we'll try again on auth state change
+        } else {
+          console.log("Profile successfully created during signup");
         }
       }
 

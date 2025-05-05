@@ -15,7 +15,7 @@ interface PwnedChatData {
   session_id: string;
   content: string;
   model_type?: ModelType;
-  created_at: string;
+  created_at: string; // Ensure this is always defined in our interface
 }
 
 interface PwnedHistoryViewerProps {
@@ -85,11 +85,12 @@ const PwnedHistoryViewer = ({
 
       if (error) throw error;
 
-      // Make sure all objects have the required properties
+      // Make sure all objects have all the required properties
       const processedData = data.map(item => ({
         ...item,
         id: item.id || uuidv4(),
-        created_at: item.created_at || new Date().toISOString()
+        created_at: item.created_at || new Date().toISOString(),
+        model_type: item.model_type || "pwned"
       })) as PwnedChatData[];
 
       setChatData(processedData);
@@ -181,7 +182,7 @@ const PwnedHistoryViewer = ({
                 <MessageBubble
                   key={item.id}
                   message={{
-                    id: item.id || uuidv4(),
+                    id: item.id,
                     role: item.user_id === userId ? "user" : "assistant",
                     content: item.content,
                     timestamp: new Date(item.created_at).getTime()
