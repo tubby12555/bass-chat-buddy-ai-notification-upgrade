@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Copy } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import MessageBubble from "./MessageBubble";
+import { Json } from "@/integrations/supabase/types";
 
 interface PwnedChatData {
   id: string;
@@ -65,10 +66,16 @@ const PwnedHistoryViewer = ({
       // Group messages by session_id
       const groupedSessions: Record<string, PwnedChatData[]> = {};
       data.forEach(message => {
-        if (!groupedSessions[message.session_id]) {
-          groupedSessions[message.session_id] = [];
+        // Cast the role string to the correct type
+        const typedMessage = {
+          ...message,
+          role: message.role as "user" | "assistant" | "system"
+        };
+        
+        if (!groupedSessions[typedMessage.session_id]) {
+          groupedSessions[typedMessage.session_id] = [];
         }
-        groupedSessions[message.session_id].push(message);
+        groupedSessions[typedMessage.session_id].push(typedMessage);
       });
 
       setSessions(groupedSessions);
