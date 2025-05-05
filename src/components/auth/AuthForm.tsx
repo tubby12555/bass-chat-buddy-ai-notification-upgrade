@@ -14,6 +14,9 @@ interface AuthFormProps {
 const AuthForm = ({ onAuthSuccess }: AuthFormProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [profession, setProfession] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -34,10 +37,10 @@ const AuthForm = ({ onAuthSuccess }: AuthFormProps) => {
         description: "Welcome back to BassProChat!",
       });
       onAuthSuccess();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Login failed",
-        description: error.message || "Please check your credentials and try again",
+        description: (error && typeof error === 'object' && 'message' in error) ? (error as { message?: string }).message : "Please check your credentials and try again",
         variant: "destructive",
       });
     } finally {
@@ -57,7 +60,7 @@ const AuthForm = ({ onAuthSuccess }: AuthFormProps) => {
 
       if (error) throw error;
 
-      // Insert profile row for new user
+      // Insert profile row for new user with retry and all details
       const { data: userData } = await supabase.auth.getUser();
       if (userData?.user?.id) {
         let profileCreated = false;
@@ -65,7 +68,14 @@ const AuthForm = ({ onAuthSuccess }: AuthFormProps) => {
         let lastError = null;
         while (!profileCreated && attempts < 3) {
           try {
-            const { error: profileError } = await supabase.from('profiles').insert({ user_id: userData.user.id });
+            const { error: profileError } = await supabase.from('profiles').insert({ 
+              user_id: userData.user.id,
+              profession: profession || null,
+              first_name: firstName || null,
+              last_name: lastName || null,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
             if (!profileError) {
               profileCreated = true;
             } else {
@@ -80,7 +90,7 @@ const AuthForm = ({ onAuthSuccess }: AuthFormProps) => {
         if (!profileCreated) {
           toast({
             title: "Profile creation failed",
-            description: lastError?.message || "Could not create user profile after multiple attempts.",
+            description: (lastError && typeof lastError === 'object' && 'message' in lastError) ? (lastError as { message?: string }).message : "Could not create user profile after multiple attempts.",
             variant: "destructive",
           });
         }
@@ -89,10 +99,10 @@ const AuthForm = ({ onAuthSuccess }: AuthFormProps) => {
         title: "Sign up successful",
         description: "Please check your email for a confirmation link",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Sign up failed",
-        description: error.message || "Please try again later",
+        description: (error && typeof error === 'object' && 'message' in error) ? (error as { message?: string }).message : "Please try again later",
         variant: "destructive",
       });
     } finally {
@@ -157,6 +167,35 @@ const AuthForm = ({ onAuthSuccess }: AuthFormProps) => {
         <TabsContent value="signup">
           <form onSubmit={handleSignup}>
             <CardContent className="space-y-4 pt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Input
+                    id="firstName"
+                    placeholder="First Name"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="bg-chat-assistant text-white"
+                  />
+                </div>
+                <div>
+                  <Input
+                    id="lastName"
+                    placeholder="Last Name"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="bg-chat-assistant text-white"
+                  />
+                </div>
+              </div>
+              <div>
+                <Input
+                  id="profession"
+                  placeholder="Profession (optional)"
+                  value={profession}
+                  onChange={(e) => setProfession(e.target.value)}
+                  className="bg-chat-assistant text-white"
+                />
+              </div>
               <div className="space-y-2">
                 <Input
                   id="email"
