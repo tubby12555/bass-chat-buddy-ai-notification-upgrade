@@ -1,9 +1,9 @@
-
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Copy, FileText, Expand, Mail, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ContentSectionProps {
   userId: string;
@@ -148,7 +148,52 @@ const ContentSection: React.FC<ContentSectionProps> = ({ userId }) => {
     };
     
     if (userId && userId !== "anonymous") fetchData();
+
+    // --- Supabase realtime subscriptions ---
+    if (userId && userId !== "anonymous") {
+      const channel = supabase.channel('content-realtime');
+      // Listen for INSERT/UPDATE on summaries
+      channel.on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'summaries',
+        filter: `user_id=eq.${userId}`,
+      }, (payload) => {
+        fetchData();
+      });
+      // Listen for INSERT/UPDATE on transcripts
+      channel.on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'transcripts',
+        filter: `user_id=eq.${userId}`,
+      }, (payload) => {
+        fetchData();
+      });
+      channel.subscribe();
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, [userId]);
+
+  // Add handler for Get Summary
+  const handleGetSummary = async (videoId: string, videoUrl: string) => {
+    try {
+      await fetch("https://n8n.srv728397.hstgr.cloud/webhook/gemini", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          videoId,
+          videoUrl,
+          contentType: "summary"
+        })
+      });
+    } catch (err) {
+      // Optionally handle error
+    }
+  };
 
   if (loading) return <div className="text-white">Loading content...</div>;
   if (schemaError) return <div className="p-4 text-red-500">{schemaError}</div>;
@@ -233,9 +278,14 @@ const ContentSection: React.FC<ContentSectionProps> = ({ userId }) => {
                   <button className="p-2 hover:bg-chat-accent/30 rounded-md">
                     <Expand size={20} />
                   </button>
-                  <button className="p-2 hover:bg-chat-accent/30 rounded-md">
+                  <Button
+                    className="p-2 hover:bg-chat-accent/30 rounded-md"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleGetSummary(summary.video_id || '', summary.video_url || '')}
+                  >
                     <RefreshCw size={20} />
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
