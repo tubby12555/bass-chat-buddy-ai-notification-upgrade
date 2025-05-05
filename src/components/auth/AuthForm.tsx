@@ -60,7 +60,30 @@ const AuthForm = ({ onAuthSuccess }: AuthFormProps) => {
       // Insert profile row for new user
       const { data: userData } = await supabase.auth.getUser();
       if (userData?.user?.id) {
-        await supabase.from('profiles').insert({ user_id: userData.user.id });
+        let profileCreated = false;
+        let attempts = 0;
+        let lastError = null;
+        while (!profileCreated && attempts < 3) {
+          try {
+            const { error: profileError } = await supabase.from('profiles').insert({ user_id: userData.user.id });
+            if (!profileError) {
+              profileCreated = true;
+            } else {
+              lastError = profileError;
+              attempts++;
+            }
+          } catch (err) {
+            lastError = err;
+            attempts++;
+          }
+        }
+        if (!profileCreated) {
+          toast({
+            title: "Profile creation failed",
+            description: lastError?.message || "Could not create user profile after multiple attempts.",
+            variant: "destructive",
+          });
+        }
       }
       toast({
         title: "Sign up successful",
