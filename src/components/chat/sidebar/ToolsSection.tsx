@@ -1,8 +1,10 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, Youtube, FileText, Image, FolderOpen, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
 
 interface ToolsSectionProps {
   onToolClick: (tool: string) => void;
@@ -10,7 +12,52 @@ interface ToolsSectionProps {
 
 const ToolsSection = ({ onToolClick }: ToolsSectionProps) => {
   const [toolsOpen, setToolsOpen] = useState(true);
+  const [pendingImages, setPendingImages] = useState(0);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkPendingImages = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { count, error } = await supabase
+          .from("content_images")
+          .select("id", { count: 'exact', head: true })
+          .eq("user_id", user.id)
+          .is("permanent_url", null)
+          .not("temp_url", "is", null);
+        
+        if (!error && count !== null) {
+          setPendingImages(count);
+        }
+      } catch (err) {
+        console.error("Error checking pending images:", err);
+      }
+    };
+
+    checkPendingImages();
+
+    // Set up a subscription for real-time updates
+    const channel = supabase
+      .channel('content-images-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'content_images'
+        },
+        () => {
+          checkPendingImages();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const handleToolClick = (tool: string) => {
     if (tool === "content") {
@@ -78,11 +125,22 @@ const ToolsSection = ({ onToolClick }: ToolsSectionProps) => {
         
         {/* Images */}
         <div 
-          className="flex items-center px-4 py-2 text-white hover:bg-chat-accent/20 cursor-pointer"
+          className="flex items-center justify-between px-4 py-2 text-white hover:bg-chat-accent/20 cursor-pointer"
           onClick={() => handleToolClick("images")}
         >
-          <Image size={16} className="mr-2" />
-          <span>Images</span>
+          <div className="flex items-center">
+            <Image size={16} className="mr-2" />
+            <span>Images</span>
+          </div>
+          
+          {pendingImages > 0 && (
+            <Badge 
+              variant="default" 
+              className="bg-chat-highlight text-black text-xs px-2 py-0 rounded-full"
+            >
+              {pendingImages}
+            </Badge>
+          )}
         </div>
         
         {/* Content */}

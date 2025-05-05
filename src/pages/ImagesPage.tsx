@@ -4,12 +4,15 @@ import ImageGallery from "@/components/gallery/ImageGallery";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, RefreshCw } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 const ImagesPage: React.FC = () => {
   const [userId, setUserId] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isProcessing, setIsProcessing] = React.useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   React.useEffect(() => {
     const getUser = async () => {
@@ -25,6 +28,38 @@ const ImagesPage: React.FC = () => {
     };
     getUser();
   }, []);
+
+  const handleProcessImages = async () => {
+    if (!userId) return;
+    
+    setIsProcessing(true);
+    try {
+      const { error } = await supabase.functions.invoke('image-processor');
+      
+      if (error) {
+        console.error("Error calling image processor:", error);
+        toast({
+          title: "Processing Error",
+          description: "There was an issue processing images. Please try again.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Images Processed",
+          description: "Your images have been processed successfully.",
+        });
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -52,14 +87,26 @@ const ImagesPage: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-white">Image Gallery</h1>
-          <Button 
-            variant="ghost" 
-            className="text-white hover:text-chat-highlight flex items-center gap-2"
-            onClick={() => navigate("/")}
-          >
-            <ArrowLeft size={16} />
-            Back to Chat
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleProcessImages}
+              disabled={isProcessing}
+              className="text-white flex items-center gap-2"
+            >
+              <RefreshCw size={16} className={isProcessing ? "animate-spin" : ""} />
+              {isProcessing ? "Processing..." : "Process Images"}
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="text-white hover:text-chat-highlight flex items-center gap-2"
+              onClick={() => navigate("/")}
+            >
+              <ArrowLeft size={16} />
+              Back to Chat
+            </Button>
+          </div>
         </div>
         
         <div className="bg-chat-assistant/20 rounded-lg p-4 mb-6">
