@@ -101,6 +101,16 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
     }
   };
 
+  // Add event listener for Escape key to close modal
+  useEffect(() => {
+    if (!modalId) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setModalId(null);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [modalId]);
+
   if (loading) return <div className="text-white">Loading content...</div>;
   if (sortedVideos.length === 0) return <div className="text-white p-4">No content found. Try adding a YouTube URL to get started.</div>;
 
@@ -140,8 +150,11 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
       </div>
       {/* Modal Popup for Video Details/Chat */}
       {modalVideo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
-          <div className="bg-chat-assistant rounded-lg shadow-lg w-full max-w-2xl mx-auto relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" onClick={() => setModalId(null)}>
+          <div
+            className="bg-chat-assistant rounded-lg shadow-lg w-full max-w-2xl mx-auto relative max-h-screen overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
             <button className="absolute top-2 right-2 text-white hover:text-chat-highlight" onClick={() => setModalId(null)}><X size={28} /></button>
             <div className="p-6">
               <div className="flex gap-4 items-center mb-4">
