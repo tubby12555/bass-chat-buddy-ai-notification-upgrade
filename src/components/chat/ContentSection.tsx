@@ -21,7 +21,7 @@ interface Transcript {
   id: string;
   video_url: string | null;
   video_id: string | null;
-  text: string | null;
+  transcript: string | null;
   created_at: string;
 }
 
@@ -49,37 +49,38 @@ interface Script {
   created_at: string;
 }
 
-function isValidSummary(item: any): item is Summary {
+function isValidSummary(item: unknown): item is Summary {
+  if (typeof item !== 'object' || item === null) return false;
+  const obj = item as Record<string, unknown>;
   return (
-    item !== null &&
-    typeof item === 'object' &&
-    'id' in item &&
-    'video_url' in item &&
-    'video_id' in item &&
-    'summary' in item &&
-    'created_at' in item
+    'id' in obj &&
+    'video_url' in obj &&
+    'video_id' in obj &&
+    'summary' in obj &&
+    'created_at' in obj
   );
 }
 
-function isValidTranscript(item: any): item is Transcript {
+function isValidTranscript(item: unknown): item is Transcript {
+  if (typeof item !== 'object' || item === null) return false;
+  const obj = item as Record<string, unknown>;
   return (
-    item !== null &&
-    typeof item === 'object' &&
-    'id' in item &&
-    'video_url' in item &&
-    'video_id' in item &&
-    'text' in item &&
-    'created_at' in item
+    'id' in obj &&
+    'video_url' in obj &&
+    'video_id' in obj &&
+    'transcript' in obj &&
+    'created_at' in obj
   );
 }
 
 // Ensure we have created_at field in all data objects
-const ensureCreatedAt = (data: any[]) => {
+type WithCreatedAt<T> = T & { created_at: string };
+const ensureCreatedAt = <T extends { created_at?: string }>(data: T[]): WithCreatedAt<T>[] => {
   return data.map(item => {
-    if (!('created_at' in item)) {
-      return { ...item, created_at: new Date().toISOString() };
+    if (!('created_at' in item) || !item.created_at) {
+      return { ...item, created_at: new Date().toISOString() } as WithCreatedAt<T>;
     }
-    return item;
+    return item as WithCreatedAt<T>;
   });
 };
 
@@ -121,7 +122,7 @@ const ContentSection: React.FC<ContentSectionProps> = ({ userId }) => {
       // Fetch transcripts
       const { data: transcriptsData, error: transcriptsError } = await supabase
         .from("transcripts")
-        .select("id, video_url, video_id, text, created_at")
+        .select("id, video_url, video_id, transcript, created_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
       
@@ -254,7 +255,7 @@ const ContentSection: React.FC<ContentSectionProps> = ({ userId }) => {
             </div>
             <CardContent className="p-4">
               <div className="mb-2 max-h-64 overflow-y-auto">
-                <div className="whitespace-pre-line">{transcript.text || "No transcript yet."}</div>
+                <div className="whitespace-pre-line">{transcript.transcript || "No transcript yet."}</div>
               </div>
             </CardContent>
           </Card>
