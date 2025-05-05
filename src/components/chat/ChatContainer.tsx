@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from "react";
 import ChatSidebar from "@/components/chat/ChatSidebar";
 import ChatWindow from "./ChatWindow";
@@ -125,14 +126,12 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
     if (userLoggedIn && userId) {
       const logEvent = async () => {
         try {
-          await supabase
-            .from('user_events')
-            .insert({
-              user_id: userId,
-              event_type: 'model_change',
-              event_data: { from: modelType, to: newModel, session_id: activeSession?.id },
-              created_at: new Date()
-            });
+          // Log using the logEventToSupabase utility function instead of direct table insert
+          await logEventToSupabase(userId, 'model_change', {
+            from: modelType,
+            to: newModel,
+            session_id: activeSession?.id
+          });
         } catch (error) {
           console.error("Failed to log model change:", error);
         }
@@ -193,9 +192,7 @@ const ChatContainer = ({ onLogout }: ChatContainerProps) => {
       />
       
       <ContentSection 
-        isOpen={isContentSectionOpen} 
-        onOpenChange={setIsContentSectionOpen}
-        userId={userId || ""}
+        userId={userId || ""} 
       />
       
       <FluxImageGenModal
