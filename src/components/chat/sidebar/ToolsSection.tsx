@@ -1,19 +1,23 @@
-
 import React, { useState, useEffect } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, Youtube, FileText, Image, FolderOpen, Calendar } from "lucide-react";
+import { ChevronDown, Youtube, FileText, Image, FolderOpen, Calendar, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import EmailModal from "../EmailModal";
 
 interface ToolsSectionProps {
   onToolClick: (tool: string) => void;
+  userId: string;
 }
 
-const ToolsSection = ({ onToolClick }: ToolsSectionProps) => {
+const ToolsSection = ({ onToolClick, userId }: ToolsSectionProps) => {
   const [toolsOpen, setToolsOpen] = useState(true);
   const [pendingImages, setPendingImages] = useState(0);
   const navigate = useNavigate();
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [emailBody, setEmailBody] = useState("");
+  const [emailSection, setEmailSection] = useState("custom");
 
   useEffect(() => {
     const checkPendingImages = async () => {
@@ -155,12 +159,22 @@ const ToolsSection = ({ onToolClick }: ToolsSectionProps) => {
         {/* Calendar */}
         <div 
           className="flex items-center px-4 py-2 text-white hover:bg-chat-accent/20 cursor-pointer"
-          onClick={() => handleToolClick("calendar")}
+          onClick={() => setIsEmailModalOpen(true)}
         >
-          <Calendar size={16} className="mr-2" />
-          <span>Calendar</span>
+          <Mail size={16} className="mr-2" />
+          <span>Email</span>
         </div>
       </CollapsibleContent>
+      {isEmailModalOpen && (
+        <EmailModal
+          open={isEmailModalOpen}
+          onClose={() => setIsEmailModalOpen(false)}
+          defaultContent={emailBody}
+          section={emailSection}
+          userId={userId}
+          onSend={() => setEmailBody("")}
+        />
+      )}
     </Collapsible>
   );
 };

@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Copy, FileText, Expand, Mail, RefreshCw, BookOpen, Newspaper, ScrollText, X, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import EmailModal from "./EmailModal";
 
 interface VideoContent {
   id: string;
@@ -42,6 +43,9 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [openPanels, setOpenPanels] = useState<Record<string, boolean>>({});
   const [copiedPanel, setCopiedPanel] = useState<string | null>(null);
+  const [emailPanel, setEmailPanel] = useState<string | null>(null);
+  const [emailContent, setEmailContent] = useState<string>("");
+  const [emailSection, setEmailSection] = useState<string>("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -202,7 +206,7 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
                       <span className="font-semibold text-white flex-1">{label}</span>
                       <div className="flex gap-2">
                         <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); navigator.clipboard.writeText(modalVideo[key] || ""); setCopiedPanel(key); setTimeout(() => setCopiedPanel(null), 1200);}} disabled={!hasContent} title={copiedPanel === key ? "Copied!" : "Copy"}><Copy size={16} /></Button>
-                        <Button size="icon" variant="ghost" className="text-white" disabled><Mail size={16} /></Button>
+                        <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); setEmailPanel(key); setEmailContent(modalVideo[key] || ""); setEmailSection(key);}} disabled={!hasContent} title="Send via Email"><Mail size={16} /></Button>
                         <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); setOpenPanels(p => ({...p, [key]: true}));}}><Maximize2 size={16} /></Button>
                         {key === "summary" && <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); handleGetSummary(modalVideo);}}><RefreshCw size={16} /></Button>}
                       </div>
@@ -242,6 +246,15 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
             </div>
           </div>
         </div>
+      )}
+      {emailPanel && (
+        <EmailModal
+          open={!!emailPanel}
+          onClose={() => setEmailPanel(null)}
+          defaultContent={emailContent}
+          section={emailSection}
+          userId={userId}
+        />
       )}
     </div>
   );
