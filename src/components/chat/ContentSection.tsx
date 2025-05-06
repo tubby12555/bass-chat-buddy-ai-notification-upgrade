@@ -67,6 +67,9 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
   const [emailSection, setEmailSection] = useState<string>("");
   const [summaryLoading, setSummaryLoading] = useState<Record<string, boolean>>({});
   const [maximizedPanel, setMaximizedPanel] = useState<string | null>(null);
+  const [blogModal, setBlogModal] = useState<{ type: 'blog' | 'blogwithimage', video: VideoContent } | null>(null);
+  const [blogNotes, setBlogNotes] = useState("");
+  const [blogLoading, setBlogLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -235,6 +238,10 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
                       <Icon size={20} className="text-white mr-2" />
                       <span className="font-semibold text-white flex-1">{label}</span>
                       <div className="flex gap-2">
+                        {key === "blog_post_basic" && <>
+                          <Button size="sm" variant="outline" className="text-chat-highlight border-chat-highlight" title="Generate a blog post in your preferred style." onClick={e => {e.stopPropagation(); setBlogModal({ type: 'blog', video: modalVideo });}}>Quick Blog</Button>
+                          <Button size="sm" variant="outline" className="text-chat-highlight border-chat-highlight" title="Generate a blog post and an AI cover image." onClick={e => {e.stopPropagation(); setBlogModal({ type: 'blogwithimage', video: modalVideo });}}>Blog + Cover Image</Button>
+                        </>}
                         <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); navigator.clipboard.writeText(modalVideo[key] || ""); setCopiedPanel(key); setTimeout(() => setCopiedPanel(null), 1200);}} disabled={!hasContent} title={copiedPanel === key ? "Copied!" : "Copy Markdown"}><Copy size={16} /></Button>
                         <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); navigator.clipboard.writeText(stripMarkdown(modalVideo[key] || "")); setCopiedPanel(key + '-plain'); setTimeout(() => setCopiedPanel(null), 1200);}} disabled={!hasContent} title={copiedPanel === key + '-plain' ? "Copied!" : "Copy Plain Text"}><Copy size={16} /></Button>
                         <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); setEmailPanel(key); setEmailContent(modalVideo[key] || ""); setEmailSection(key);}} disabled={!hasContent} title="Send via Email"><Mail size={16} /></Button>
@@ -296,6 +303,43 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
             </DialogHeader>
             <div className="text-white whitespace-pre-line max-h-[80vh] overflow-y-auto p-4">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{modalVideo[maximizedPanel] || ''}</ReactMarkdown>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+      {/* Blog Generation Modal */}
+      {blogModal && (
+        <Dialog open={!!blogModal} onOpenChange={() => { setBlogModal(null); setBlogNotes(""); setBlogLoading(false); }}>
+          <DialogContent className="max-w-lg bg-black border-chat-highlight">
+            <DialogHeader>
+              <DialogTitle className="text-white">{blogModal.type === 'blog' ? 'Quick Blog' : 'Blog + Cover Image'}</DialogTitle>
+            </DialogHeader>
+            <div className="flex flex-col gap-4">
+              <div className="text-white">Add extra notes or instructions for the AI (optional):</div>
+              <textarea className="w-full min-h-[80px] rounded bg-black/30 text-white p-2 border border-chat-accent/30 focus:outline-none" value={blogNotes} onChange={e => setBlogNotes(e.target.value)} placeholder="e.g. Focus on the latest trends, mention my company, etc." />
+              <Button onClick={async () => {
+                setBlogLoading(true);
+                try {
+                  await fetch("https://n8n.srv728397.hstgr.cloud/webhook/gemini", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      userId,
+                      videoUrl: blogModal.video.video_url,
+                      contentType: blogModal.type === 'blog' ? 'blog' : 'blogwithimage',
+                      extraNotes: blogNotes
+                    })
+                  });
+                  toast({ title: "Request sent", description: blogModal.type === 'blog' ? "Blog generation started." : "Blog + image generation started.", variant: "default" });
+                  setBlogModal(null); setBlogNotes("");
+                } catch {
+                  toast({ title: "Error", description: "Failed to send request.", variant: "destructive" });
+                } finally {
+                  setBlogLoading(false);
+                }
+              }} disabled={blogLoading}>
+                {blogLoading ? <svg className="animate-spin h-4 w-4 inline-block mr-2" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> : (blogModal.type === 'blog' ? 'Generate Blog' : 'Generate Blog + Image')}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
