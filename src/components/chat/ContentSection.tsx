@@ -41,6 +41,7 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
   const [chatLoading, setChatLoading] = useState<Record<string, boolean>>({});
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [openPanels, setOpenPanels] = useState<Record<string, boolean>>({});
+  const [copiedPanel, setCopiedPanel] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -200,7 +201,7 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
                       <Icon size={20} className="text-white mr-2" />
                       <span className="font-semibold text-white flex-1">{label}</span>
                       <div className="flex gap-2">
-                        <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); navigator.clipboard.writeText(modalVideo[key] || "");}} disabled={!hasContent}><Copy size={16} /></Button>
+                        <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); navigator.clipboard.writeText(modalVideo[key] || ""); setCopiedPanel(key); setTimeout(() => setCopiedPanel(null), 1200);}} disabled={!hasContent} title={copiedPanel === key ? "Copied!" : "Copy"}><Copy size={16} /></Button>
                         <Button size="icon" variant="ghost" className="text-white" disabled><Mail size={16} /></Button>
                         <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); setOpenPanels(p => ({...p, [key]: true}));}}><Maximize2 size={16} /></Button>
                         {key === "summary" && <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); handleGetSummary(modalVideo);}}><RefreshCw size={16} /></Button>}

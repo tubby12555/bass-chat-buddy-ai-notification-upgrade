@@ -2,8 +2,9 @@ import React from "react";
 import { format } from "date-fns";
 import BassLogo from "../shared/BassLogo";
 import { ModelType } from "@/types/chat";
-import { Bot, User } from "lucide-react";
+import { Bot, User, Copy } from "lucide-react";
 import DOMPurify from 'dompurify';
+import { useState } from 'react';
 
 interface Message {
   id: string;
@@ -20,6 +21,13 @@ interface MessageBubbleProps {
 const MessageBubble = ({ message, modelType = "qwen" }: MessageBubbleProps) => {
   const isUser = message.role === "user";
   const isSystem = message.role === "system";
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(message.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1200);
+  };
 
   // Function to render markdown-like content with basic formatting
   const renderContent = (content: string) => {
@@ -67,7 +75,16 @@ const MessageBubble = ({ message, modelType = "qwen" }: MessageBubbleProps) => {
               ? "bg-gray-700/40 text-gray-300"
               : "bg-chat-assistant text-white"
         }`}
+        style={{ position: 'relative' }}
       >
+        <button
+          onClick={handleCopy}
+          className="absolute top-2 right-2 text-white opacity-60 hover:opacity-100"
+          title={copied ? "Copied!" : "Copy"}
+          style={{ zIndex: 2 }}
+        >
+          <Copy size={16} />
+        </button>
         <div 
           className="prose prose-sm prose-invert max-w-none"
           dangerouslySetInnerHTML={renderContent(message.content)}
