@@ -1,4 +1,3 @@
-
 import React from "react";
 import ContentSection from "@/components/chat/ContentSection";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,13 +32,12 @@ const ContentPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-chat p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="min-h-screen bg-chat p-2 sm:p-6 w-full max-w-full">
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-2 w-full max-w-full">
         <h1 className="text-2xl font-bold text-white">Content Organizer</h1>
         <a href="/" className="text-chat-highlight underline">Back to Chat</a>
       </div>
-      
-      <div className="bg-chat-assistant rounded-lg p-4 mb-6">
+      <div className="bg-chat-assistant rounded-lg p-2 sm:p-4 mb-6 w-full max-w-full">
         <ContentSection userId={userId} />
       </div>
     </div>

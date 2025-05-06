@@ -160,13 +160,13 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
       {/* Enlarged Image Modal */}
       {enlargedImage && (
         <Dialog open={!!enlargedImage} onOpenChange={() => setEnlargedImage(null)}>
-          <DialogContent className="max-w-3xl bg-black border-chat-highlight">
+          <DialogContent className="w-full max-w-full sm:max-w-3xl h-auto max-h-[90vh] overflow-y-auto bg-black border-chat-highlight p-2 sm:p-6">
             <DialogHeader>
               <DialogTitle className="text-white">Image Preview</DialogTitle>
             </DialogHeader>
             <div className="flex flex-col gap-4">
-              <img src={enlargedImage.permanent_url!} alt={enlargedImage.prompt || "Image"} className="w-full max-h-[70vh] object-contain rounded-lg bg-black" />
-              <div className="text-white text-sm">
+              <img src={enlargedImage.permanent_url!} alt={enlargedImage.prompt || "Image"} className="w-full max-h-[60vh] object-contain rounded-lg bg-black" />
+              <div className="text-white text-sm break-words">
                 <div><span className="font-semibold">Prompt:</span> {enlargedImage.prompt || <span className="text-gray-400">None</span>}</div>
                 {enlargedImage.style && <div><span className="font-semibold">Style:</span> {enlargedImage.style}</div>}
                 <div><span className="font-semibold">Type:</span> {enlargedImage.content_type || "uncategorized"}</div>

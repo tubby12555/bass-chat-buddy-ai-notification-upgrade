@@ -103,7 +103,7 @@ const ChatSidebar = ({
       <div 
         className={`
           ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} 
-          fixed md:relative z-30 w-64 h-screen bg-chat-assistant flex flex-col transition-transform duration-300 ease-in-out overflow-hidden
+          fixed md:relative z-30 w-full max-w-full md:w-64 h-screen bg-chat-assistant flex flex-col transition-transform duration-300 ease-in-out overflow-y-auto
         `}
       >
         <SidebarHeader onToggleSidebar={onToggleSidebar} />
@@ -127,7 +127,7 @@ const ChatSidebar = ({
         />
         
         {/* Tools Section */}
-        <ToolsSection onToolClick={handleSidebarToolClick} />
+        <ToolsSection onToolClick={handleSidebarToolClick} userId={userId} />
         
         {/* Settings Section */}
         <SettingsSection onToolClick={onToolClick || (() => {})} />

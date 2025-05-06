@@ -63,76 +63,57 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, onClick, onDelete, onEnlar
   return (
     <Card 
       key={image.id} 
-      className="bg-chat-assistant rounded-lg shadow-lg cursor-pointer overflow-hidden transition-transform hover:scale-[1.02] relative" 
+      className="bg-chat-assistant rounded-lg shadow-lg cursor-pointer overflow-hidden transition-transform hover:scale-[1.02] relative w-full max-w-full"
       onClick={onClick}
     >
-      <div className="aspect-square relative">
+      <div className="aspect-square relative w-full max-w-full">
         {onEnlarge && (
           <button
-            className="absolute top-2 left-2 bg-black/70 hover:bg-black text-white rounded-full p-1 z-10"
+            className="absolute top-2 left-2 bg-black/70 hover:bg-black/90 text-white rounded-full p-2 flex items-center justify-center z-10 focus:outline-none focus:ring-2 focus:ring-chat-highlight focus:ring-offset-2 w-9 h-9"
             onClick={e => { e.stopPropagation(); onEnlarge(image); }}
-            title="Enlarge image"
+            title="Enlarge"
           >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4h4M20 8V4h-4M4 16v4h4m12-4v4h-4" /></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 3h6m0 0v6m0-6L10 14m-7 7h6m0 0v-6m0 6L14 10" />
+            </svg>
           </button>
         )}
-        {isValidSupabaseUrl(image.permanent_url) ? (
-          <>
-            {!imageLoaded && !imageError && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-                <div className="animate-pulse">
-                  <Image size={32} className="text-gray-600" />
-                </div>
-              </div>
-            )}
-            
-            {imageError && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-                <Image size={32} className="text-gray-600" />
-              </div>
-            )}
-            
-            <img 
-              src={image.permanent_url!} 
-              alt={image.prompt || "Generated image"} 
-              className={`w-full h-full object-cover ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-              loading="lazy"
-              onLoad={handleImageLoad}
-              onError={handleImageError}
-            />
-          </>
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gray-800 text-gray-400">
-            <Image size={32} />
-          </div>
-        )}
-      </div>
-      <div className="p-3">
-        <div className="text-sm text-white font-medium line-clamp-2 h-10">
-          {image.prompt || "No prompt"}
-        </div>
-        <div className="mt-2 flex justify-between items-center">
-          <span className="text-xs px-2 py-1 bg-chat-highlight/20 rounded-full text-chat-highlight">
-            {image.content_type || "uncategorized"}
-          </span>
-          {image.style && (
-            <span className="text-xs text-gray-400">{image.style}</span>
-          )}
-        </div>
         {onDelete && (
           <button
-            className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full p-1 z-10"
+            className="absolute top-2 right-2 bg-red-600/80 hover:bg-red-700 text-white rounded-full p-2 flex items-center justify-center z-10 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 w-9 h-9"
             onClick={handleDelete}
             disabled={deleting}
-            title="Delete image"
+            title="Delete"
           >
             {deleting ? (
-              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
             ) : (
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
             )}
           </button>
         )}
+        <img
+          src={image.permanent_url!}
+          alt={image.prompt || "Image"}
+          className="w-full h-full object-cover rounded-t-lg bg-black"
+          onLoad={handleImageLoad}
+          onError={handleImageError}
+        />
+        {!imageLoaded && !imageError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+            <svg className="animate-spin w-8 h-8 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
+          </div>
+        )}
+        {imageError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-white text-xs">Failed to load</div>
+        )}
+      </div>
+      <div className="p-2 flex flex-col gap-1 w-full max-w-full">
+        <div className="font-semibold text-white text-sm truncate break-words" title={image.prompt || "Image"}>{image.prompt || "Image"}</div>
+        {image.style && <div className="text-xs text-gray-400 truncate">{image.style}</div>}
+        <div className="text-xs text-gray-400 truncate">{image.content_type || "uncategorized"}</div>
       </div>
     </Card>
   );

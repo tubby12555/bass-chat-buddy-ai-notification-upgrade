@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -52,7 +51,7 @@ const ImageDetailsModal: React.FC<ImageDetailsModalProps> = ({
 
   return (
     <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-      <DialogContent className="max-w-3xl bg-chat-assistant border-chat-highlight">
+      <DialogContent className="w-full max-w-full sm:max-w-2xl h-auto max-h-[90vh] overflow-y-auto bg-black border-chat-highlight p-2 sm:p-6">
         <DialogHeader>
           <DialogTitle className="text-white">Image Details</DialogTitle>
         </DialogHeader>
@@ -62,7 +61,7 @@ const ImageDetailsModal: React.FC<ImageDetailsModalProps> = ({
               <img 
                 src={selectedImage.permanent_url!} 
                 alt={selectedImage.prompt || "Generated image"} 
-                className="w-full rounded-lg object-contain max-h-[70vh] bg-black" 
+                className="w-full max-h-[50vh] object-contain rounded-lg bg-black" 
               />
             ) : (
               <div className="w-full h-60 flex items-center justify-center bg-gray-800 text-gray-400 rounded-lg">
@@ -70,7 +69,7 @@ const ImageDetailsModal: React.FC<ImageDetailsModalProps> = ({
               </div>
             )}
           </div>
-          <div className="md:w-1/2 text-white">
+          <div className="md:w-1/2 text-white break-words">
             <div className="space-y-4">
               <div>
                 <h3 className="text-sm font-semibold text-gray-400 mb-1">Prompt</h3>
