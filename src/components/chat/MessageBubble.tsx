@@ -1,9 +1,9 @@
-
 import React from "react";
 import { format } from "date-fns";
 import BassLogo from "../shared/BassLogo";
 import { ModelType } from "@/types/chat";
 import { Bot, User } from "lucide-react";
+import DOMPurify from 'dompurify';
 
 interface Message {
   id: string;
@@ -41,7 +41,8 @@ const MessageBubble = ({ message, modelType = "qwen" }: MessageBubbleProps) => {
     // Replace newlines with HTML line breaks
     const withLineBreaks = withInlineCode.replace(/\n/g, '<br>');
     
-    return { __html: withLineBreaks };
+    // Sanitize the final HTML
+    return { __html: DOMPurify.sanitize(withLineBreaks) };
   };
 
   return (

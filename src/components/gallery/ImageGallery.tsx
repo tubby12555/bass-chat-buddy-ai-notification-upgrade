@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -35,17 +34,21 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
   const [selectedImage, setSelectedImage] = useState<ContentImage | null>(null);
   const [tab, setTab] = useState<string>("all");
   const { toast } = useToast();
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 50;
 
-  const fetchImages = useCallback(async () => {
+  const fetchImages = useCallback(async (reset = false) => {
     setLoading(true);
     try {
-      console.log("Fetching images for user", userId);
+      console.log("Fetching images for user", userId, "page", page);
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
       const { data, error } = await supabase
         .from("content_images")
         .select("id, user_id, permanent_url, content_type, prompt, style, blog, created_at")
         .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-      
+        .order("created_at", { ascending: false })
+        .range(from, to);
       if (error) {
         console.error("Error fetching images:", error);
         toast({
@@ -55,17 +58,16 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
         });
       } else if (data) {
         console.log("Fetched images:", data.length);
-        // Filter out images with invalid permanent_url
         const validImages = data.filter(img => isValidSupabaseUrl(img.permanent_url));
         console.log("Valid images:", validImages.length);
-        setImages(validImages as ContentImage[]);
+        setImages(prev => reset ? validImages : [...prev, ...validImages]);
       }
     } catch (err) {
       console.error("Unexpected error:", err);
     } finally {
       setLoading(false);
     }
-  }, [userId, toast]);
+  }, [userId, toast, page]);
 
   // Check for pending images that need processing
   const checkPendingImages = useCallback(async () => {
@@ -133,10 +135,10 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
 
   useEffect(() => {
     if (userId) {
-      console.log("Component mounted, fetching images...");
-      fetchImages();
-      // Automatically process images when component mounts
-      processImages(); 
+      setImages([]);
+      setPage(0);
+      fetchImages(true);
+      processImages();
     }
   }, [userId, fetchImages, processImages]);
 
@@ -177,6 +179,11 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
   console.log("Loading state:", loading);
   console.log("Processing state:", processingImages);
 
+  // Add Load More button
+  const handleLoadMore = () => {
+    setPage(prev => prev + 1);
+  };
+
   return (
     <div className="p-2">
       <ImageFilter
@@ -214,6 +221,14 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
               ? "You haven't generated any images yet." 
               : `You haven't generated any ${tab} images yet.`}
           </p>
+        </div>
+      )}
+      
+      {images.length % PAGE_SIZE === 0 && images.length > 0 && (
+        <div className="flex justify-center mt-4">
+          <button className="px-4 py-2 bg-chat-accent text-white rounded" onClick={handleLoadMore} disabled={loading}>
+            {loading ? "Loading..." : "Load More"}
+          </button>
         </div>
       )}
       

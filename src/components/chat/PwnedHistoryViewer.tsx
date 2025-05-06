@@ -28,22 +28,25 @@ const PwnedHistoryViewer: React.FC<PwnedHistoryViewerProps> = ({
   const [sessions, setSessions] = useState<Record<string, PwnedChatData[]>>({});
   const [loading, setLoading] = useState(true);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 50;
 
   useEffect(() => {
-    const fetchSessions = async () => {
+    const fetchSessions = async (reset = false) => {
       setLoading(true);
       try {
+        const from = page * PAGE_SIZE;
+        const to = from + PAGE_SIZE - 1;
         const { data, error } = await supabase
           .from("pwned_chat_data")
           .select("*")
           .eq("user_id", userId)
-          .order("created_at", { ascending: false });
-
+          .order("created_at", { ascending: false })
+          .range(from, to);
         if (error) {
           console.error("Error fetching sessions:", error);
           return;
         }
-
         // Group by session_id
         const groupedSessions: Record<string, PwnedChatData[]> = {};
         data.forEach((item: PwnedChatData) => {
@@ -52,17 +55,17 @@ const PwnedHistoryViewer: React.FC<PwnedHistoryViewerProps> = ({
           }
           groupedSessions[item.session_id].push(item);
         });
-
-        setSessions(groupedSessions);
+        setSessions(prev => reset ? groupedSessions : { ...prev, ...groupedSessions });
       } finally {
         setLoading(false);
       }
     };
-
     if (userId) {
-      fetchSessions();
+      setSessions({});
+      setPage(0);
+      fetchSessions(true);
     }
-  }, [userId]);
+  }, [userId, page]);
 
   const handleDeleteSession = async () => {
     if (!sessionToDelete) return;
@@ -108,6 +111,11 @@ const PwnedHistoryViewer: React.FC<PwnedHistoryViewerProps> = ({
       console.error("Error formatting date:", error);
       return "Invalid date";
     }
+  };
+
+  // Add Load More button
+  const handleLoadMore = () => {
+    setPage(prev => prev + 1);
   };
 
   if (loading) {
@@ -170,6 +178,13 @@ const PwnedHistoryViewer: React.FC<PwnedHistoryViewerProps> = ({
           </div>
         </div>
       ))}
+      {sessionIds.length % PAGE_SIZE === 0 && sessionIds.length > 0 && (
+        <div className="flex justify-center mt-4">
+          <button className="px-4 py-2 bg-chat-accent text-white rounded" onClick={handleLoadMore} disabled={loading}>
+            {loading ? "Loading..." : "Load More"}
+          </button>
+        </div>
+      )}
     </div>
   );
 };
