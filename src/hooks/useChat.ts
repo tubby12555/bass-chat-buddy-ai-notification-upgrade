@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ModelType } from "@/types/chat";
 import { sendMessage } from "@/utils/chatUtils";
 import { User } from '@supabase/supabase-js';
+import { Database } from "@/integrations/supabase/types";
 
 export interface Message {
   id: string;
@@ -18,6 +19,20 @@ export interface Session {
   title: string;
   createdAt: number;
   messages: Message[];
+  modelType?: string;
+  updatedAt?: number;
+}
+
+// Add type for chat_data row with new columns
+export interface ChatDataRow {
+  id: number;
+  message: Message[] | string | null;
+  session_id: string;
+  user_id?: string;
+  created_at?: string;
+  updated_at?: string;
+  chat_title?: string;
+  model_type?: string;
 }
 
 export const useChat = () => {
@@ -53,6 +68,60 @@ export const useChat = () => {
       authListener?.subscription?.unsubscribe?.();
     };
   }, []);
+
+  // Fetch chat history from Supabase on user login
+  useEffect(() => {
+    if (!user?.id) return;
+    const fetchChats = async () => {
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("chat_data")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("updated_at", { ascending: false });
+        if (error) throw error;
+        // Type guard: filter only valid rows with session_id
+        // Use 'any' for compatibility with Supabase loose types and legacy rows
+        const validRows: any[] = (data || []).filter((row: any) => row && typeof row.session_id === "string");
+        // Group by session_id
+        const grouped: Record<string, ChatDataRow[]> = {};
+        validRows.forEach((row: any) => {
+          if (!grouped[row.session_id]) grouped[row.session_id] = [];
+          grouped[row.session_id].push(row as ChatDataRow);
+        });
+        // Map to Session[]
+        const sessionList: Session[] = Object.entries(grouped).map(([sessionId, rows]) => {
+          // Use the most recent row for title/modelType, and merge all messages
+          const sorted = rows.sort((a, b) => (b.updated_at || "") > (a.updated_at || "") ? 1 : -1);
+          const latest = sorted[0];
+          // Parse messages as Message[]
+          const allMessages: Message[] = sorted.flatMap(r => {
+            if (Array.isArray(r.message)) return r.message as Message[];
+            if (typeof r.message === "string") {
+              try { return JSON.parse(r.message) as Message[]; } catch { return []; }
+            }
+            return [];
+          });
+          return {
+            id: sessionId,
+            title: latest.chat_title || "Chat",
+            createdAt: new Date(latest.created_at || latest.updated_at || Date.now()).getTime(),
+            updatedAt: new Date(latest.updated_at || latest.created_at || Date.now()).getTime(),
+            modelType: latest.model_type || undefined,
+            messages: allMessages
+          };
+        });
+        setSessions(sessionList);
+        if (sessionList.length > 0) setCurrentSessionId(sessionList[0].id);
+      } catch (e) {
+        console.error("Error fetching chat_data from Supabase:", e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchChats();
+  }, [user?.id]);
 
   // Restore sessions from local storage
   useEffect(() => {
