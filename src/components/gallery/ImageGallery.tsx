@@ -30,7 +30,6 @@ const isValidSupabaseUrl = (url: string | null | undefined): boolean => {
 const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
   const [images, setImages] = useState<ContentImage[]>([]);
   const [loading, setLoading] = useState(true);
-  const [processingImages, setProcessingImages] = useState(false);
   const [selectedImage, setSelectedImage] = useState<ContentImage | null>(null);
   const [tab, setTab] = useState<string>("all");
   const { toast } = useToast();
@@ -40,7 +39,6 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
   const fetchImages = useCallback(async (reset = false) => {
     setLoading(true);
     try {
-      console.log("Fetching images for user", userId, "page", page);
       const from = page * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
       const { data, error } = await supabase
@@ -50,101 +48,32 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
         .order("created_at", { ascending: false })
         .range(from, to);
       if (error) {
-        console.error("Error fetching images:", error);
         toast({
           title: "Error",
           description: "Failed to load images. Please try again.",
           variant: "destructive"
         });
       } else if (data) {
-        console.log("Fetched images:", data.length);
         const validImages = data.filter(img => isValidSupabaseUrl(img.permanent_url));
-        console.log("Valid images:", validImages.length);
         setImages(prev => reset ? validImages : [...prev, ...validImages]);
       }
     } catch (err) {
-      console.error("Unexpected error:", err);
+      // Optionally handle error
     } finally {
       setLoading(false);
     }
   }, [userId, toast, page]);
-
-  // Check for pending images that need processing
-  const checkPendingImages = useCallback(async () => {
-    try {
-      console.log("Checking for pending images...");
-      const { count, error } = await supabase
-        .from("content_images")
-        .select("id", { count: 'exact', head: true })
-        .eq("user_id", userId)
-        .is("permanent_url", null)
-        .not("temp_url", "is", null);
-      
-      if (!error && count && count > 0) {
-        console.log(`Found ${count} pending images`);
-        return count;
-      }
-      return 0;
-    } catch (err) {
-      console.error("Error checking pending images:", err);
-      return 0;
-    }
-  }, [userId]);
-
-  // Process pending images automatically via the edge function
-  const processImages = useCallback(async () => {
-    const pendingCount = await checkPendingImages();
-    
-    if (pendingCount === 0) {
-      console.log("No pending images to process");
-      return;
-    }
-    
-    console.log(`Processing ${pendingCount} pending images...`);
-    setProcessingImages(true);
-    try {
-      // Log event
-      await logEventToSupabase(userId, 'process_images', { count: pendingCount });
-      
-      // Call the edge function to process images
-      console.log("Invoking image-processor function");
-      const { data, error } = await supabase.functions.invoke('image-processor');
-      
-      if (error) {
-        console.error("Error calling image processor:", error);
-        toast({
-          title: "Processing Error",
-          description: "There was an issue processing some images. Please try again later.",
-          variant: "destructive"
-        });
-      } else {
-        console.log("Image processor response:", data);
-        toast({
-          title: "Images Processed",
-          description: "Your images have been processed successfully.",
-        });
-        // Refresh the image list
-        fetchImages();
-      }
-    } catch (err) {
-      console.error("Unexpected error during image processing:", err);
-    } finally {
-      setProcessingImages(false);
-    }
-  }, [checkPendingImages, fetchImages, toast, userId]);
 
   useEffect(() => {
     if (userId) {
       setImages([]);
       setPage(0);
       fetchImages(true);
-      processImages();
     }
-  }, [userId, fetchImages, processImages]);
+  }, [userId, fetchImages]);
 
-  // Set up a subscription for real-time updates
+  // Real-time subscription: only re-fetch images on change
   useEffect(() => {
-    console.log("Setting up real-time subscription");
     const channel = supabase
       .channel('content-images-changes')
       .on(
@@ -155,31 +84,20 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
           table: 'content_images',
           filter: `user_id=eq.${userId}`
         },
-        (payload) => {
-          console.log("Real-time update received", payload);
-          // When changes are detected, refresh the image list and check for pending images
-          fetchImages();
-          processImages();
+        () => {
+          fetchImages(true);
         }
       )
       .subscribe();
-
     return () => {
-      console.log("Cleaning up real-time subscription");
       supabase.removeChannel(channel);
     };
-  }, [userId, fetchImages, processImages]);
+  }, [userId, fetchImages]);
 
   const filteredImages = tab === "all" 
     ? images 
     : images.filter(img => img.content_type === tab);
 
-  console.log("Rendering with filtered images:", filteredImages.length);
-  console.log("Current tab:", tab);
-  console.log("Loading state:", loading);
-  console.log("Processing state:", processingImages);
-
-  // Add Load More button
   const handleLoadMore = () => {
     setPage(prev => prev + 1);
   };
@@ -190,30 +108,27 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
         tab={tab}
         setTab={setTab}
         tabs={TABS}
-        loading={loading || processingImages}
+        loading={loading}
         filteredImages={filteredImages}
       />
-      
-      {(loading || processingImages) && (
+      {loading && (
         <div className="flex justify-center items-center py-20">
           <div className="animate-pulse text-white flex items-center">
             <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            {processingImages ? "Processing images..." : "Loading images..."}
+            Loading images...
           </div>
         </div>
       )}
-      
-      {!loading && !processingImages && filteredImages.length > 0 && (
+      {!loading && filteredImages.length > 0 && (
         <ImageGrid 
           images={filteredImages}
           onSelectImage={setSelectedImage}
         />
       )}
-      
-      {!loading && !processingImages && filteredImages.length === 0 && (
+      {!loading && filteredImages.length === 0 && (
         <div className="text-white p-8 text-center bg-chat-assistant/30 rounded-lg">
           <p className="text-xl font-medium mb-2">No images found</p>
           <p className="text-gray-400">
@@ -223,7 +138,6 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
           </p>
         </div>
       )}
-      
       {images.length % PAGE_SIZE === 0 && images.length > 0 && (
         <div className="flex justify-center mt-4">
           <button className="px-4 py-2 bg-chat-accent text-white rounded" onClick={handleLoadMore} disabled={loading}>
@@ -231,7 +145,6 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
           </button>
         </div>
       )}
-      
       <ImageDetailsModal
         selectedImage={selectedImage}
         setSelectedImage={setSelectedImage}
