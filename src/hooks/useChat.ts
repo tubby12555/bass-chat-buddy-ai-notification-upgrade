@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ModelType } from "@/types/chat";
 import { sendMessage } from "@/utils/chatUtils";
+import { User } from '@supabase/supabase-js';
 
 export interface Message {
   id: string;
@@ -24,7 +24,7 @@ export const useChat = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const { toast } = useToast();
   const [selectedModel, setSelectedModel] = useState<ModelType>("qwen");
 
@@ -33,10 +33,25 @@ export const useChat = () => {
       const { data } = await supabase.auth.getUser();
       if (data?.user) {
         setUser(data.user);
+      } else {
+        setUser(null);
       }
     };
 
     getUser();
+
+    // Listen for auth state changes
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => {
+      authListener?.subscription?.unsubscribe?.();
+    };
   }, []);
 
   // Restore sessions from local storage
