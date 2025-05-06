@@ -179,9 +179,9 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
   return (
     <div className="p-2">
       <div className="mb-4 text-xl font-bold text-white">YouTube Videos <span className="bg-chat-accent text-xs px-2 py-1 rounded-full ml-2">{sortedVideos.length}</span></div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full">
         {sortedVideos.map((video) => (
-          <div key={video.id} className="bg-chat-assistant rounded-lg shadow-lg flex flex-col">
+          <div key={video.id} className="bg-chat-assistant rounded-lg shadow-lg flex flex-col w-full max-w-full">
             <div className="relative cursor-pointer" onClick={() => setModalId(video.id)}>
               {video.thumbnail_url ? (
                 <img src={video.thumbnail_url} alt={video.title || video.video_url} className="rounded-t-lg w-full h-40 object-cover" />
@@ -191,16 +191,16 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
               <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">{video.created_at ? new Date(video.created_at).toLocaleDateString() : ""}</div>
             </div>
             <div className="p-3 flex-1 flex flex-col">
-              <div className="font-bold text-lg truncate" title={video.title || video.video_url}>{video.title || video.video_url}</div>
-              <div className="text-xs text-gray-400 mb-2 truncate">{video.summary || video.transcript?.slice(0, 80) || "No summary yet."}</div>
-              <div className="flex gap-2 mt-auto">
+              <div className="font-bold text-lg truncate break-words" title={video.title || video.video_url}>{video.title || video.video_url}</div>
+              <div className="text-xs text-gray-400 mb-2 truncate break-words">{video.summary || video.transcript?.slice(0, 80) || "No summary yet."}</div>
+              <div className="flex flex-wrap gap-2 mt-auto">
                 <FileText size={20} className="text-white" aria-label="Transcript" />
                 <BookOpen size={20} className="text-white" aria-label="Summary" />
                 <Newspaper size={20} className="text-white" aria-label="Blog" />
                 <Mail size={20} className="text-white" aria-label="Email" />
                 <ScrollText size={20} className="text-white" aria-label="Script" />
               </div>
-              <div className="flex gap-2 mt-2">
+              <div className="flex flex-wrap gap-2 mt-2">
                 <Button size="icon" variant="outline" className="text-chat-highlight border-chat-highlight" onClick={() => setModalId(video.id)}>View</Button>
                 <Button size="icon" variant="destructive" className="ml-auto" onClick={() => handleDelete(video.id)} disabled={deletingId === video.id}>{deletingId === video.id ? "..." : "Delete"}</Button>
               </div>
@@ -212,74 +212,72 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
       {modalVideo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" onClick={() => setModalId(null)}>
           <div
-            className="bg-chat-assistant rounded-lg shadow-lg w-full max-w-2xl mx-auto relative max-h-screen overflow-y-auto"
+            className="bg-chat-assistant rounded-lg shadow-lg w-full max-w-full sm:max-w-2xl mx-auto relative max-h-[90vh] overflow-y-auto p-2 sm:p-6"
             onClick={e => e.stopPropagation()}
           >
             <button className="absolute top-2 right-2 text-white hover:text-chat-highlight" onClick={() => setModalId(null)}><X size={28} /></button>
-            <div className="p-6">
-              <div className="flex gap-4 items-center mb-4">
-                {modalVideo.thumbnail_url ? (
-                  <img src={modalVideo.thumbnail_url} alt={modalVideo.title || modalVideo.video_url} className="rounded w-32 h-20 object-cover" />
-                ) : (
-                  <div className="w-32 h-20 bg-black/30 flex items-center justify-center rounded text-3xl text-white">🎬</div>
-                )}
-                <div>
-                  <div className="font-bold text-xl mb-1">{modalVideo.title || modalVideo.video_url}</div>
-                  <div className="text-xs text-gray-400 mb-1">{modalVideo.video_url}</div>
-                  <div className="text-xs text-gray-400">{modalVideo.created_at ? new Date(modalVideo.created_at).toLocaleDateString() : ""}</div>
-                </div>
+            <div className="flex flex-col sm:flex-row gap-4 items-center mb-4">
+              {modalVideo.thumbnail_url ? (
+                <img src={modalVideo.thumbnail_url} alt={modalVideo.title || modalVideo.video_url} className="rounded w-32 h-20 object-cover" />
+              ) : (
+                <div className="w-32 h-20 bg-black/30 flex items-center justify-center rounded text-3xl text-white">🎬</div>
+              )}
+              <div className="w-full">
+                <div className="font-bold text-xl mb-1 truncate break-words">{modalVideo.title || modalVideo.video_url}</div>
+                <div className="text-xs text-gray-400 mb-1 break-words">{modalVideo.video_url}</div>
+                <div className="text-xs text-gray-400">{modalVideo.created_at ? new Date(modalVideo.created_at).toLocaleDateString() : ""}</div>
               </div>
-              {PANEL_TYPES.map(({ key, label, icon: Icon }) => {
-                const hasContent = !!modalVideo[key as keyof typeof modalVideo];
-                return (
-                  <div key={key} className="mb-3 border border-chat-assistant rounded-lg bg-black/40">
-                    <div className="flex items-center px-4 py-3 cursor-pointer" onClick={() => togglePanel(key)}>
-                      <span className={`h-2 w-2 rounded-full mr-3 ${hasContent ? "bg-green-500" : "bg-gray-500"}`}></span>
-                      <Icon size={20} className="text-white mr-2" />
-                      <span className="font-semibold text-white flex-1">{label}</span>
-                      <div className="flex gap-2">
-                        {key === "blog_post_basic" && <>
-                          <Button size="sm" variant="outline" className="text-chat-highlight border-chat-highlight" title="Generate a blog post in your preferred style." onClick={e => {e.stopPropagation(); setBlogModal({ type: 'blog', video: modalVideo });}}>Quick Blog</Button>
-                          <Button size="sm" variant="outline" className="text-chat-highlight border-chat-highlight" title="Generate a blog post and an AI cover image." onClick={e => {e.stopPropagation(); setBlogModal({ type: 'blogwithimage', video: modalVideo });}}>Blog + Cover Image</Button>
-                        </>}
-                        <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); navigator.clipboard.writeText(modalVideo[key] || ""); setCopiedPanel(key); setTimeout(() => setCopiedPanel(null), 1200);}} disabled={!hasContent} title={copiedPanel === key ? "Copied!" : "Copy Markdown"}><Copy size={16} /></Button>
-                        <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); navigator.clipboard.writeText(stripMarkdown(modalVideo[key] || "")); setCopiedPanel(key + '-plain'); setTimeout(() => setCopiedPanel(null), 1200);}} disabled={!hasContent} title={copiedPanel === key + '-plain' ? "Copied!" : "Copy Plain Text"}><Copy size={16} /></Button>
-                        <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); setEmailPanel(key); setEmailContent(modalVideo[key] || ""); setEmailSection(key);}} disabled={!hasContent} title="Send via Email"><Mail size={16} /></Button>
-                        <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); setMaximizedPanel(key);}} title="Maximize"><Maximize2 size={16} /></Button>
-                        {key === "summary" && <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); handleGetSummary(modalVideo);}} disabled={summaryLoading[modalVideo.id]}>{summaryLoading[modalVideo.id] ? <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> : <RefreshCw size={16} />}</Button>}
-                      </div>
-                      <span className="ml-2 text-white">{openPanels[key] ? "▼" : "▶"}</span>
+            </div>
+            {PANEL_TYPES.map(({ key, label, icon: Icon }) => {
+              const hasContent = !!modalVideo[key as keyof typeof modalVideo];
+              return (
+                <div key={key} className="mb-3 border border-chat-assistant rounded-lg bg-black/40">
+                  <div className="flex flex-col sm:flex-row items-center px-4 py-3 cursor-pointer gap-2" onClick={() => togglePanel(key)}>
+                    <span className={`h-2 w-2 rounded-full mr-3 ${hasContent ? "bg-green-500" : "bg-gray-500"}`}></span>
+                    <Icon size={20} className="text-white mr-2" />
+                    <span className="font-semibold text-white flex-1 text-sm truncate break-words">{label}</span>
+                    <div className="flex flex-wrap gap-2">
+                      {key === "blog_post_basic" && <>
+                        <Button size="sm" variant="outline" className="text-chat-highlight border-chat-highlight" title="Generate a blog post in your preferred style." onClick={e => {e.stopPropagation(); setBlogModal({ type: 'blog', video: modalVideo });}}>Quick Blog</Button>
+                        <Button size="sm" variant="outline" className="text-chat-highlight border-chat-highlight" title="Generate a blog post and an AI cover image." onClick={e => {e.stopPropagation(); setBlogModal({ type: 'blogwithimage', video: modalVideo });}}>Blog + Cover Image</Button>
+                      </>}
+                      <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); navigator.clipboard.writeText(modalVideo[key] || ""); setCopiedPanel(key); setTimeout(() => setCopiedPanel(null), 1200);}} disabled={!hasContent} title={copiedPanel === key ? "Copied!" : "Copy Markdown"}><Copy size={16} /></Button>
+                      <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); navigator.clipboard.writeText(stripMarkdown(modalVideo[key] || "")); setCopiedPanel(key + '-plain'); setTimeout(() => setCopiedPanel(null), 1200);}} disabled={!hasContent} title={copiedPanel === key + '-plain' ? "Copied!" : "Copy Plain Text"}><Copy size={16} /></Button>
+                      <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); setEmailPanel(key); setEmailContent(modalVideo[key] || ""); setEmailSection(key);}} disabled={!hasContent} title="Send via Email"><Mail size={16} /></Button>
+                      <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); setMaximizedPanel(key);}} title="Maximize"><Maximize2 size={16} /></Button>
+                      {key === "summary" && <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); handleGetSummary(modalVideo);}} disabled={summaryLoading[modalVideo.id]}>{summaryLoading[modalVideo.id] ? <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> : <RefreshCw size={16} />}</Button>}
                     </div>
-                    {openPanels[key] && (
-                      <div className="px-4 pb-4 text-white whitespace-pre-line">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{modalVideo[key] || ''}</ReactMarkdown>
-                      </div>
-                    )}
+                    <span className="ml-2 text-white">{openPanels[key] ? "▼" : "▶"}</span>
                   </div>
-                );
-              })}
-              <div className="mt-4">
-                <div className="font-bold mb-2">Chat</div>
-                <div className="max-h-64 overflow-y-auto bg-black/10 rounded p-2 mb-2" style={{ minHeight: 80 }}>
-                  {(chatMessages[modalVideo.id] || []).map((msg, idx) => (
-                    <div key={idx} className={`mb-2 ${msg.role === "user" ? "text-chat-highlight" : msg.role === "assistant" ? "text-green-400" : "text-red-400"}`}>
-                      <b>{msg.role === "user" ? "You" : msg.role === "assistant" ? "AI" : "System"}:</b> {msg.content}
+                  {openPanels[key] && (
+                    <div className="px-4 pb-4 text-white whitespace-pre-line text-sm break-words overflow-x-auto">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{modalVideo[key] || ''}</ReactMarkdown>
                     </div>
-                  ))}
+                  )}
                 </div>
-                <div className="flex gap-2">
-                  <input
-                    className="flex-1 rounded p-2 bg-black/20 text-white border border-chat-accent/30 focus:outline-none"
-                    placeholder="Ask a question about this video..."
-                    value={chatInput[modalVideo.id] || ""}
-                    onChange={e => setChatInput(prev => ({ ...prev, [modalVideo.id]: e.target.value }))}
-                    onKeyDown={e => { if (e.key === "Enter") handleChatSend(modalVideo); }}
-                    disabled={chatLoading[modalVideo.id]}
-                  />
-                  <Button onClick={() => handleChatSend(modalVideo)} disabled={chatLoading[modalVideo.id] || !(chatInput[modalVideo.id] || "").trim()}>
-                    {chatLoading[modalVideo.id] ? "Sending..." : "Send"}
-                  </Button>
-                </div>
+              );
+            })}
+            <div className="mt-4">
+              <div className="font-bold mb-2">Chat</div>
+              <div className="max-h-64 overflow-y-auto bg-black/10 rounded p-2 mb-2" style={{ minHeight: 80 }}>
+                {(chatMessages[modalVideo.id] || []).map((msg, idx) => (
+                  <div key={idx} className={`mb-2 ${msg.role === "user" ? "text-chat-highlight" : msg.role === "assistant" ? "text-green-400" : "text-red-400"}`}>
+                    <b>{msg.role === "user" ? "You" : msg.role === "assistant" ? "AI" : "System"}:</b> {msg.content}
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  className="flex-1 rounded p-2 bg-black/20 text-white border border-chat-accent/30 focus:outline-none"
+                  placeholder="Ask a question about this video..."
+                  value={chatInput[modalVideo.id] || ""}
+                  onChange={e => setChatInput(prev => ({ ...prev, [modalVideo.id]: e.target.value }))}
+                  onKeyDown={e => { if (e.key === "Enter") handleChatSend(modalVideo); }}
+                  disabled={chatLoading[modalVideo.id]}
+                />
+                <Button onClick={() => handleChatSend(modalVideo)} disabled={chatLoading[modalVideo.id] || !(chatInput[modalVideo.id] || "").trim()}>
+                  {chatLoading[modalVideo.id] ? "Sending..." : "Send"}
+                </Button>
               </div>
             </div>
           </div>
@@ -297,11 +295,11 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
       {/* Maximized Content Panel Modal */}
       {maximizedPanel && (
         <Dialog open={!!maximizedPanel} onOpenChange={() => setMaximizedPanel(null)}>
-          <DialogContent className="max-w-4xl bg-black border-chat-highlight">
+          <DialogContent className="w-full max-w-full sm:max-w-4xl bg-black border-chat-highlight p-2 sm:p-6 h-[90vh] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-white">{PANEL_TYPES.find(p => p.key === maximizedPanel)?.label || "Content"}</DialogTitle>
+              <DialogTitle className="text-white text-base sm:text-xl truncate">{PANEL_TYPES.find(p => p.key === maximizedPanel)?.label || "Content"}</DialogTitle>
             </DialogHeader>
-            <div className="text-white whitespace-pre-line max-h-[80vh] overflow-y-auto p-4">
+            <div className="text-white whitespace-pre-line max-h-[70vh] overflow-y-auto p-2 sm:p-4 text-sm break-words">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{modalVideo[maximizedPanel] || ''}</ReactMarkdown>
             </div>
           </DialogContent>
@@ -310,13 +308,13 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
       {/* Blog Generation Modal */}
       {blogModal && (
         <Dialog open={!!blogModal} onOpenChange={() => { setBlogModal(null); setBlogNotes(""); setBlogLoading(false); }}>
-          <DialogContent className="max-w-lg bg-black border-chat-highlight">
+          <DialogContent className="w-full max-w-full sm:max-w-lg bg-black border-chat-highlight p-2 sm:p-6">
             <DialogHeader>
-              <DialogTitle className="text-white">{blogModal.type === 'blog' ? 'Quick Blog' : 'Blog + Cover Image'}</DialogTitle>
+              <DialogTitle className="text-white text-base sm:text-xl truncate">{blogModal.type === 'blog' ? 'Quick Blog' : 'Blog + Cover Image'}</DialogTitle>
             </DialogHeader>
             <div className="flex flex-col gap-4">
-              <div className="text-white">Add extra notes or instructions for the AI (optional):</div>
-              <textarea className="w-full min-h-[80px] rounded bg-black/30 text-white p-2 border border-chat-accent/30 focus:outline-none" value={blogNotes} onChange={e => setBlogNotes(e.target.value)} placeholder="e.g. Focus on the latest trends, mention my company, etc." />
+              <div className="text-white text-sm">Add extra notes or instructions for the AI (optional):</div>
+              <textarea className="w-full min-h-[80px] rounded bg-black/30 text-white p-2 border border-chat-accent/30 focus:outline-none text-sm" value={blogNotes} onChange={e => setBlogNotes(e.target.value)} placeholder="e.g. Focus on the latest trends, mention my company, etc." />
               <Button onClick={async () => {
                 setBlogLoading(true);
                 try {
@@ -337,7 +335,7 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
                 } finally {
                   setBlogLoading(false);
                 }
-              }} disabled={blogLoading}>
+              }} disabled={blogLoading} className="w-full sm:w-auto">
                 {blogLoading ? <svg className="animate-spin h-4 w-4 inline-block mr-2" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> : (blogModal.type === 'blog' ? 'Generate Blog' : 'Generate Blog + Image')}
               </Button>
             </div>
