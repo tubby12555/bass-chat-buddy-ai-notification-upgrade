@@ -5,6 +5,7 @@ import ImageFilter from "./ImageFilter";
 import ImageGrid from "./ImageGrid";
 import ImageDetailsModal from "./ImageDetailsModal";
 import { logEventToSupabase } from "@/utils/loggingUtils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface ContentImage {
   id: string;
@@ -35,6 +36,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
   const { toast } = useToast();
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 50;
+  const [enlargedImage, setEnlargedImage] = useState<ContentImage | null>(null);
 
   const fetchImages = useCallback(async (reset = false) => {
     setLoading(true);
@@ -131,6 +133,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
           images={filteredImages}
           onSelectImage={setSelectedImage}
           onDelete={handleDeleteImage}
+          onEnlarge={setEnlargedImage}
         />
       )}
       {!loading && filteredImages.length === 0 && (
@@ -154,6 +157,24 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
         selectedImage={selectedImage}
         setSelectedImage={setSelectedImage}
       />
+      {/* Enlarged Image Modal */}
+      {enlargedImage && (
+        <Dialog open={!!enlargedImage} onOpenChange={() => setEnlargedImage(null)}>
+          <DialogContent className="max-w-3xl bg-black border-chat-highlight">
+            <DialogHeader>
+              <DialogTitle className="text-white">Image Preview</DialogTitle>
+            </DialogHeader>
+            <div className="flex flex-col gap-4">
+              <img src={enlargedImage.permanent_url!} alt={enlargedImage.prompt || "Image"} className="w-full max-h-[70vh] object-contain rounded-lg bg-black" />
+              <div className="text-white text-sm">
+                <div><span className="font-semibold">Prompt:</span> {enlargedImage.prompt || <span className="text-gray-400">None</span>}</div>
+                {enlargedImage.style && <div><span className="font-semibold">Style:</span> {enlargedImage.style}</div>}
+                <div><span className="font-semibold">Type:</span> {enlargedImage.content_type || "uncategorized"}</div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

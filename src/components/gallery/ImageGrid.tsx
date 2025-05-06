@@ -16,9 +16,10 @@ interface ImageGridProps {
   images: ContentImage[];
   onSelectImage: (image: ContentImage) => void;
   onDelete?: (id: string) => void;
+  onEnlarge?: (image: ContentImage) => void;
 }
 
-const ImageGrid: React.FC<ImageGridProps> = ({ images, onSelectImage, onDelete }) => {
+const ImageGrid: React.FC<ImageGridProps> = ({ images, onSelectImage, onDelete, onEnlarge }) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {images.map(img => (
@@ -27,6 +28,7 @@ const ImageGrid: React.FC<ImageGridProps> = ({ images, onSelectImage, onDelete }
           image={img} 
           onClick={() => onSelectImage(img)} 
           onDelete={onDelete}
+          onEnlarge={onEnlarge}
         />
       ))}
     </div>

@@ -8,6 +8,7 @@ import EmailModal from "./EmailModal";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useToast } from "@/components/ui/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface VideoContent {
   id: string;
@@ -65,6 +66,7 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
   const [emailContent, setEmailContent] = useState<string>("");
   const [emailSection, setEmailSection] = useState<string>("");
   const [summaryLoading, setSummaryLoading] = useState<Record<string, boolean>>({});
+  const [maximizedPanel, setMaximizedPanel] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -236,7 +238,7 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
                         <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); navigator.clipboard.writeText(modalVideo[key] || ""); setCopiedPanel(key); setTimeout(() => setCopiedPanel(null), 1200);}} disabled={!hasContent} title={copiedPanel === key ? "Copied!" : "Copy Markdown"}><Copy size={16} /></Button>
                         <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); navigator.clipboard.writeText(stripMarkdown(modalVideo[key] || "")); setCopiedPanel(key + '-plain'); setTimeout(() => setCopiedPanel(null), 1200);}} disabled={!hasContent} title={copiedPanel === key + '-plain' ? "Copied!" : "Copy Plain Text"}><Copy size={16} /></Button>
                         <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); setEmailPanel(key); setEmailContent(modalVideo[key] || ""); setEmailSection(key);}} disabled={!hasContent} title="Send via Email"><Mail size={16} /></Button>
-                        <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); setOpenPanels(p => ({...p, [key]: true}));}}><Maximize2 size={16} /></Button>
+                        <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); setMaximizedPanel(key);}} title="Maximize"><Maximize2 size={16} /></Button>
                         {key === "summary" && <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); handleGetSummary(modalVideo);}} disabled={summaryLoading[modalVideo.id]}>{summaryLoading[modalVideo.id] ? <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> : <RefreshCw size={16} />}</Button>}
                       </div>
                       <span className="ml-2 text-white">{openPanels[key] ? "▼" : "▶"}</span>
@@ -284,6 +286,19 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
           section={emailSection}
           userId={userId}
         />
+      )}
+      {/* Maximized Content Panel Modal */}
+      {maximizedPanel && (
+        <Dialog open={!!maximizedPanel} onOpenChange={() => setMaximizedPanel(null)}>
+          <DialogContent className="max-w-4xl bg-black border-chat-highlight">
+            <DialogHeader>
+              <DialogTitle className="text-white">{PANEL_TYPES.find(p => p.key === maximizedPanel)?.label || "Content"}</DialogTitle>
+            </DialogHeader>
+            <div className="text-white whitespace-pre-line max-h-[80vh] overflow-y-auto p-4">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{modalVideo[maximizedPanel] || ''}</ReactMarkdown>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

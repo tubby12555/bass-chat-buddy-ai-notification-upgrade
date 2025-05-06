@@ -19,13 +19,14 @@ interface ImageCardProps {
   image: ContentImage;
   onClick: () => void;
   onDelete?: (id: string) => void;
+  onEnlarge?: (image: ContentImage) => void;
 }
 
 const isValidSupabaseUrl = (url: string | null | undefined): boolean => {
   return !!url && url.includes('.supabase.co/storage/');
 };
 
-const ImageCard: React.FC<ImageCardProps> = ({ image, onClick, onDelete }) => {
+const ImageCard: React.FC<ImageCardProps> = ({ image, onClick, onDelete, onEnlarge }) => {
   const [imageLoaded, setImageLoaded] = React.useState(false);
   const [imageError, setImageError] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
@@ -66,6 +67,15 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, onClick, onDelete }) => {
       onClick={onClick}
     >
       <div className="aspect-square relative">
+        {onEnlarge && (
+          <button
+            className="absolute top-2 left-2 bg-black/70 hover:bg-black text-white rounded-full p-1 z-10"
+            onClick={e => { e.stopPropagation(); onEnlarge(image); }}
+            title="Enlarge image"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4h4M20 8V4h-4M4 16v4h4m12-4v4h-4" /></svg>
+          </button>
+        )}
         {isValidSupabaseUrl(image.permanent_url) ? (
           <>
             {!imageLoaded && !imageError && (
