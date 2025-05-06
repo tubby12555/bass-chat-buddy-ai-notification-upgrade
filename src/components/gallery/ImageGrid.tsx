@@ -1,4 +1,3 @@
-
 import React from "react";
 import ImageCard from "./ImageCard";
 
@@ -16,9 +15,10 @@ interface ContentImage {
 interface ImageGridProps {
   images: ContentImage[];
   onSelectImage: (image: ContentImage) => void;
+  onDelete?: (id: string) => void;
 }
 
-const ImageGrid: React.FC<ImageGridProps> = ({ images, onSelectImage }) => {
+const ImageGrid: React.FC<ImageGridProps> = ({ images, onSelectImage, onDelete }) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {images.map(img => (
@@ -26,6 +26,7 @@ const ImageGrid: React.FC<ImageGridProps> = ({ images, onSelectImage }) => {
           key={img.id} 
           image={img} 
           onClick={() => onSelectImage(img)} 
+          onDelete={onDelete}
         />
       ))}
     </div>

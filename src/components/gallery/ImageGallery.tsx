@@ -102,6 +102,10 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
     setPage(prev => prev + 1);
   };
 
+  const handleDeleteImage = (id: string) => {
+    setImages(prev => prev.filter(img => img.id !== id));
+  };
+
   return (
     <div className="p-2">
       <ImageFilter
@@ -126,6 +130,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
         <ImageGrid 
           images={filteredImages}
           onSelectImage={setSelectedImage}
+          onDelete={handleDeleteImage}
         />
       )}
       {!loading && filteredImages.length === 0 && (
