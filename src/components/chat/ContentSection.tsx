@@ -5,6 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Copy, FileText, Expand, Mail, RefreshCw, BookOpen, Newspaper, ScrollText, X, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import EmailModal from "./EmailModal";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface VideoContent {
   id: string;
@@ -32,6 +34,21 @@ const PANEL_TYPES = [
   { key: "email", label: "Email", icon: Mail },
   { key: "script", label: "Script", icon: ScrollText },
 ];
+
+// Utility to strip markdown for plain text copy
+function stripMarkdown(markdown: string) {
+  if (!markdown) return '';
+  let text = markdown;
+  text = text.replace(/^#+\s+/gm, '');
+  text = text.replace(/^(\*|-|_){3,}\s*$/gm, '');
+  text = text.replace(/!?\[(.*?)\]\(.*?\)/g, '$1');
+  text = text.replace(/(\*\*|__|\*|_|~~)(.*?)\1/g, '$2');
+  text = text.replace(/`([^`]+)`/g, '$1');
+  text = text.replace(/^>\s+/gm, '');
+  text = text.replace(/^(\*|-|\d+\.)\s+/gm, '');
+  text = text.replace(/\n{2,}/g, '\n\n');
+  return text.trim();
+}
 
 const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
   const [videos, setVideos] = useState<VideoContent[]>([]);
@@ -205,7 +222,8 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
                       <Icon size={20} className="text-white mr-2" />
                       <span className="font-semibold text-white flex-1">{label}</span>
                       <div className="flex gap-2">
-                        <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); navigator.clipboard.writeText(modalVideo[key] || ""); setCopiedPanel(key); setTimeout(() => setCopiedPanel(null), 1200);}} disabled={!hasContent} title={copiedPanel === key ? "Copied!" : "Copy"}><Copy size={16} /></Button>
+                        <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); navigator.clipboard.writeText(modalVideo[key] || ""); setCopiedPanel(key); setTimeout(() => setCopiedPanel(null), 1200);}} disabled={!hasContent} title={copiedPanel === key ? "Copied!" : "Copy Markdown"}><Copy size={16} /></Button>
+                        <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); navigator.clipboard.writeText(stripMarkdown(modalVideo[key] || "")); setCopiedPanel(key + '-plain'); setTimeout(() => setCopiedPanel(null), 1200);}} disabled={!hasContent} title={copiedPanel === key + '-plain' ? "Copied!" : "Copy Plain Text"}><Copy size={16} /></Button>
                         <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); setEmailPanel(key); setEmailContent(modalVideo[key] || ""); setEmailSection(key);}} disabled={!hasContent} title="Send via Email"><Mail size={16} /></Button>
                         <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); setOpenPanels(p => ({...p, [key]: true}));}}><Maximize2 size={16} /></Button>
                         {key === "summary" && <Button size="icon" variant="ghost" className="text-white" onClick={e => {e.stopPropagation(); handleGetSummary(modalVideo);}}><RefreshCw size={16} /></Button>}
@@ -214,7 +232,7 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
                     </div>
                     {openPanels[key] && (
                       <div className="px-4 pb-4 text-white whitespace-pre-line">
-                        {modalVideo[key] || <span className="text-gray-400">No {label.toLowerCase()} yet.</span>}
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{modalVideo[key] || ''}</ReactMarkdown>
                       </div>
                     )}
                   </div>
