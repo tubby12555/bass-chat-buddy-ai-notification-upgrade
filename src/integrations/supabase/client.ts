@@ -10,11 +10,5 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 
 export const supabase = createClient<Database>(
   SUPABASE_URL,
-  SUPABASE_PUBLISHABLE_KEY,
-  {
-    functions: {
-      // Use the dedicated functions subdomain for Edge Functions
-      url: 'https://brdizsjlbqumtdepqgaa.functions.supabase.co'
-    }
-  }
+  SUPABASE_PUBLISHABLE_KEY
 );

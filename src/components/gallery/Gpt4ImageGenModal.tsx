@@ -47,7 +47,7 @@ const Gpt4ImageGenModal: React.FC<Gpt4ImageGenModalProps> = ({ open, onOpenChang
       if (insertError) throw insertError;
       
       const payload = {
-        contentType: "gpt4.1imagegen",
+        contentType: "gpt4.1image",
         prompt,
         style,
         userId,
