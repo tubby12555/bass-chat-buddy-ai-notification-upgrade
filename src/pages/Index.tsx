@@ -27,6 +27,14 @@ const Index = ({ isAuthenticated, setIsAuthenticated }: IndexProps) => {
           <AuthForm onAuthSuccess={handleAuthSuccess} />
         </div>
       )}
+      {/* Empty state for new users */}
+      {isAuthenticated && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-black/80 text-white px-6 py-4 rounded-xl shadow-lg z-50 text-center max-w-md">
+          <div className="text-xl font-bold mb-2">Welcome to BassProChat!</div>
+          <div className="text-gray-300 mb-2">You haven't added any content or generated images yet.</div>
+          <div className="text-gray-400">Try adding a YouTube URL in the Content tab or generate your first image in the Images tab.</div>
+        </div>
+      )}
     </div>
   );
 };

@@ -68,46 +68,11 @@ const AuthForm = ({ onAuthSuccess }: AuthFormProps) => {
 
       if (error) throw error;
 
-      // Insert profile row for new user with retry and all details
-      const { data: userData } = await supabase.auth.getUser();
-      if (userData?.user?.id) {
-        let profileCreated = false;
-        let attempts = 0;
-        let lastError = null;
-        while (!profileCreated && attempts < 3) {
-          try {
-            const { error: profileError } = await supabase.from('profiles').insert({ 
-              user_id: userData.user.id,
-              profession: profession || null,
-              first_name: firstName || null,
-              last_name: lastName || null,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            });
-            if (!profileError) {
-              profileCreated = true;
-            } else {
-              lastError = profileError;
-              attempts++;
-            }
-          } catch (err) {
-            lastError = err;
-            attempts++;
-          }
-        }
-        if (!profileCreated) {
-          toast({
-            title: "Profile creation failed",
-            description: (lastError && typeof lastError === 'object' && 'message' in lastError) ? (lastError as { message?: string }).message : "Could not create user profile after multiple attempts.",
-            variant: "destructive",
-          });
-        }
-      }
-
       toast({
         title: "Sign up successful",
         description: "Please check your email for a confirmation link",
       });
+      onAuthSuccess();
     } catch (error: unknown) {
       toast({
         title: "Sign up failed",

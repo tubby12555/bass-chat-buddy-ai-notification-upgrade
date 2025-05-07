@@ -10,34 +10,64 @@ import NotFound from "./pages/NotFound";
 import ContentPage from "./pages/ContentPage";
 import ImagesPage from "./pages/ImagesPage";
 import { useToast } from "@/components/ui/use-toast";
+import React from "react";
 
 const queryClient = new QueryClient();
 
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: unknown }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: unknown) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error: unknown, errorInfo: React.ErrorInfo) {
+    // Log error to service if needed
+    console.error("ErrorBoundary caught:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return <div className="fixed inset-0 flex items-center justify-center bg-black/90 z-50 text-white text-center">
+        <div>
+          <div className="text-2xl font-bold mb-2">Something went wrong</div>
+          <div className="mb-4">{(this.state.error as Error)?.message || "An unexpected error occurred."}</div>
+          <button className="bg-chat-accent px-4 py-2 rounded" onClick={() => window.location.reload()}>Reload</button>
+        </div>
+      </div>;
+    }
+    return this.props.children;
+  }
+}
+
 const App = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const { toast } = useToast();
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data } = await supabase.auth.getSession();
-      setIsAuthenticated(!!data.session);
-
-      // Set up auth listener
-      supabase.auth.onAuthStateChange(async (event, session) => {
-        console.log("Auth state changed:", event);
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        setIsAuthenticated(!!data.session);
+      } catch (err) {
+        console.error('Error checking auth session:', err);
+        setIsAuthenticated(false);
+      }
+      const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
         setIsAuthenticated(!!session);
-        
         if (session?.user) {
-          await ensureProfileExists(session.user);
+          ensureProfileExists(session.user).catch(console.error);
         }
       });
+      // cleanup
+      return () => { sub.subscription.unsubscribe(); };
     };
-
     checkAuth();
   }, []);
 
   // Function to ensure profile exists for a user
-  const ensureProfileExists = async (user: any) => {
+  const ensureProfileExists = async (user: { id: string; user_metadata?: Record<string, unknown> }) => {
     if (!user || !user.id) return;
     
     console.log("Checking profile for user:", user.id);
@@ -57,9 +87,9 @@ const App = () => {
         console.log("Creating new profile for user:", userId);
         
         // Extract metadata from user if available
-        const firstName = user.user_metadata?.first_name;
-        const lastName = user.user_metadata?.last_name;
-        const profession = user.user_metadata?.profession;
+        const firstName = typeof user.user_metadata?.first_name === 'string' ? user.user_metadata.first_name : null;
+        const lastName = typeof user.user_metadata?.last_name === 'string' ? user.user_metadata.last_name : null;
+        const profession = typeof user.user_metadata?.profession === 'string' ? user.user_metadata.profession : null;
         
         // Insert the profile with available data
         const { error: insertError } = await supabase
@@ -93,30 +123,23 @@ const App = () => {
     }
   };
 
-  // Show loading state while checking auth
-  if (isAuthenticated === null) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-chat">
-        <div className="animate-pulse text-white text-2xl">Loading...</div>
-      </div>
-    );
-  }
-
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} />} />
-            <Route path="/content" element={<ContentPage />} />
-            <Route path="/images" element={<ImagesPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} />} />
+              <Route path="/content" element={<ContentPage />} />
+              <Route path="/images" element={<ImagesPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
 
