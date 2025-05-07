@@ -109,7 +109,7 @@ const ImageDetailsModal: React.FC<ImageDetailsModalProps> = ({
 
   return (
     <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-      <DialogContent className="w-full max-w-full sm:max-w-3xl h-auto max-h-[90vh] overflow-y-auto bg-gradient-to-br from-black to-gray-900 border border-chat-highlight p-2 sm:p-6 shadow-xl shadow-chat-highlight/20">
+      <DialogContent className="w-full max-w-4xl h-auto max-h-[90vh] overflow-y-auto bg-gradient-to-br from-black to-gray-900 border border-chat-highlight/50 p-6 shadow-xl shadow-chat-highlight/20">
         <DialogHeader>
           <DialogTitle className="text-white text-xl font-bold flex items-center gap-2">
             <Image size={20} className="text-chat-highlight" />
@@ -118,34 +118,37 @@ const ImageDetailsModal: React.FC<ImageDetailsModalProps> = ({
         </DialogHeader>
         
         <div className="flex flex-col md:flex-row gap-6 animate-fade-in">
-          <div className="md:w-1/2 relative rounded-xl overflow-hidden bg-black/30 flex items-center justify-center">
+          <div className="md:w-1/2 relative rounded-xl overflow-hidden bg-black/50 flex items-center justify-center border border-white/5 shadow-inner">
             {imageUrl ? (
               <>
                 {!imageLoaded && !imageError && (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-10 h-10 border-4 border-chat-highlight/30 border-t-chat-highlight rounded-full animate-spin"></div>
+                    <div className="w-12 h-12 border-4 border-chat-highlight/30 border-t-chat-highlight rounded-full animate-spin"></div>
                   </div>
                 )}
                 
                 <img 
                   src={imageUrl} 
                   alt={selectedImage.prompt || "Generated image"} 
-                  className={`w-full max-h-[50vh] object-contain transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                  className={`w-full h-auto max-h-[50vh] object-contain transition-all duration-500 ${imageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
                   onLoad={handleImageLoad}
                   onError={handleImageError}
                 />
                 
                 {imageError && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 bg-black/50 p-4">
-                    <Image size={48} />
-                    <p className="mt-2 text-center">Failed to load image</p>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 bg-black/70 p-4">
+                    <Image size={48} className="mb-4 opacity-30" />
+                    <p className="text-center">Failed to load image</p>
+                    <p className="text-center text-xs mt-2 max-w-xs text-gray-500">
+                      The image URL might be invalid or the image might have been deleted
+                    </p>
                   </div>
                 )}
               </>
             ) : (
-              <div className="w-full h-60 flex items-center justify-center bg-gray-800/30 text-gray-400 rounded-lg">
+              <div className="w-full h-60 flex items-center justify-center bg-black/50 text-gray-400 rounded-lg">
                 <div className="flex flex-col items-center">
-                  <Image size={48} />
+                  <Image size={48} className="mb-4 opacity-30" />
                   <p className="mt-2">No image available</p>
                 </div>
               </div>
@@ -154,28 +157,28 @@ const ImageDetailsModal: React.FC<ImageDetailsModalProps> = ({
           
           <div className="md:w-1/2 text-white break-words flex flex-col">
             <div className="space-y-4 flex-grow">
-              <div className="bg-black/30 rounded-lg p-4">
+              <div className="bg-black/40 backdrop-blur-sm rounded-lg p-4 border border-white/5">
                 <h3 className="text-sm font-semibold text-chat-highlight mb-1">Prompt</h3>
                 <p className="text-sm">{selectedImage.prompt || "None"}</p>
               </div>
               
               {selectedImage.style && (
-                <div className="bg-black/30 rounded-lg p-4">
+                <div className="bg-black/40 backdrop-blur-sm rounded-lg p-4 border border-white/5">
                   <h3 className="text-sm font-semibold text-chat-highlight mb-1">Style</h3>
                   <p className="text-sm">{selectedImage.style}</p>
                 </div>
               )}
               
-              <div className="bg-black/30 rounded-lg p-4">
+              <div className="bg-black/40 backdrop-blur-sm rounded-lg p-4 border border-white/5">
                 <h3 className="text-sm font-semibold text-chat-highlight mb-1">Type</h3>
                 <p className="text-sm">{selectedImage.content_type || "uncategorized"}</p>
                 <p className="text-xs text-gray-400 mt-2">Created on {createdDate}</p>
               </div>
               
               {selectedImage.content_type === "gpt4.1image" && selectedImage.blog && (
-                <div className="bg-black/30 rounded-lg p-4">
+                <div className="bg-black/40 backdrop-blur-sm rounded-lg p-4 border border-white/5">
                   <h3 className="text-sm font-semibold text-chat-highlight mb-1">Blog</h3>
-                  <div className="bg-black/30 p-3 rounded text-sm max-h-40 overflow-y-auto whitespace-pre-line">
+                  <div className="bg-black/40 p-3 rounded text-sm max-h-40 overflow-y-auto whitespace-pre-line scrollbar-thin scrollbar-thumb-chat-accent/40 scrollbar-track-transparent">
                     {selectedImage.blog}
                   </div>
                 </div>
@@ -188,7 +191,7 @@ const ImageDetailsModal: React.FC<ImageDetailsModalProps> = ({
                   <Button 
                     size="sm" 
                     variant="outline" 
-                    className="flex items-center gap-1 bg-black/40 border-chat-highlight/50 hover:bg-chat-highlight/20"
+                    className="flex items-center gap-1 bg-black/40 border-chat-highlight/50 hover:bg-chat-highlight/20 button-glow"
                     onClick={() => handleCopyUrl(imageUrl)}
                   >
                     <Copy size={16} className="text-chat-highlight" /> Copy URL
@@ -196,7 +199,7 @@ const ImageDetailsModal: React.FC<ImageDetailsModalProps> = ({
                   <Button 
                     size="sm" 
                     variant="outline"
-                    className="flex items-center gap-1 bg-black/40 border-chat-highlight/50 hover:bg-chat-highlight/20"
+                    className="flex items-center gap-1 bg-black/40 border-chat-highlight/50 hover:bg-chat-highlight/20 button-glow"
                     onClick={() => window.open(imageUrl, "_blank")}
                   >
                     <ExternalLink size={16} className="text-chat-highlight" /> Open
@@ -204,7 +207,7 @@ const ImageDetailsModal: React.FC<ImageDetailsModalProps> = ({
                   <Button 
                     size="sm" 
                     variant="outline"
-                    className="flex items-center gap-1 bg-black/40 border-chat-highlight/50 hover:bg-chat-highlight/20"
+                    className="flex items-center gap-1 bg-black/40 border-chat-highlight/50 hover:bg-chat-highlight/20 button-glow"
                     onClick={() => handleDownloadImage(imageUrl)}
                   >
                     <Download size={16} className="text-chat-highlight" /> Download

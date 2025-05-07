@@ -104,7 +104,15 @@ export default {
 				'wiggle': {
 					'0%, 100%': { transform: 'rotate(-3deg)' },
 					'50%': { transform: 'rotate(3deg)' }
-				}
+				},
+				'shimmer': {
+					'0%': { backgroundPosition: '-200% 0' },
+					'100%': { backgroundPosition: '200% 0' }
+				},
+				'zoom-fade-in': {
+					'0%': { opacity: '0', transform: 'scale(0.95)' },
+					'100%': { opacity: '1', transform: 'scale(1)' }
+				},
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
@@ -113,7 +121,9 @@ export default {
 				'pulse-dot-1': 'pulse-dots 1.4s infinite ease-in-out',
 				'pulse-dot-2': 'pulse-dots 1.4s 0.2s infinite ease-in-out',
 				'pulse-dot-3': 'pulse-dots 1.4s 0.4s infinite ease-in-out',
-				'wiggle': 'wiggle 1s ease-in-out infinite'
+				'wiggle': 'wiggle 1s ease-in-out infinite',
+				'shimmer': 'shimmer 1.5s infinite',
+				'zoom-fade-in': 'zoom-fade-in 0.3s ease-out',
 			}
 		}
 	},
