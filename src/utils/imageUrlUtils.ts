@@ -19,6 +19,9 @@ export const isValidDriveUrl = (url: string | null | undefined): boolean => {
 
 /**
  * Get the most appropriate image URL from an image object
+ * 
+ * Prioritizes permanent_url from Supabase over temp_url from Google Drive
+ * Converts Google Drive view URLs to direct image URLs if needed
  */
 export const getImageUrl = (image: {
   permanent_url: string | null;

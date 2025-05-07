@@ -1,9 +1,10 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Image } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { getImageUrl } from "@/utils/imageUrlUtils";
 
 interface ContentImage {
   id: string;
@@ -24,27 +25,11 @@ interface ImageCardProps {
   onEnlarge?: () => void;
 }
 
-const isValidSupabaseUrl = (url: string | null | undefined): boolean => {
-  return !!url && url.includes('.supabase.co/storage/');
-};
-
-const getImageUrl = (image: ContentImage) => {
-  if (image.permanent_url && image.permanent_url.includes('.supabase.co/storage/')) return image.permanent_url;
-  if (image.temp_url && image.temp_url.startsWith('https://drive.google.com/')) {
-    // Convert Google Drive view URL to direct image URL if needed
-    if (image.temp_url.includes('view?usp=sharing')) {
-      return image.temp_url.replace('view?usp=sharing', 'preview');
-    }
-    return image.temp_url;
-  }
-  return null;
-};
-
 const ImageCard: React.FC<ImageCardProps> = ({ image, onClick, onDelete, onEnlarge }) => {
-  const [imageLoaded, setImageLoaded] = React.useState(false);
-  const [imageError, setImageError] = React.useState(false);
-  const [deleting, setDeleting] = React.useState(false);
-  const [hovered, setHovered] = React.useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const { toast } = useToast();
 
   const handleImageLoad = () => {
