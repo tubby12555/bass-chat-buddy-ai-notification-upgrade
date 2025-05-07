@@ -55,6 +55,7 @@ function stripMarkdown(markdown: string) {
 const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
   const [videos, setVideos] = useState<VideoContent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [realtimeLoading, setRealtimeLoading] = useState(false);
   const [modalId, setModalId] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<Record<string, { role: string; content: string }[]>>({});
   const [chatInput, setChatInput] = useState<Record<string, string>>({});
@@ -72,18 +73,45 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
   const [blogLoading, setBlogLoading] = useState(false);
   const { toast } = useToast();
 
+  // Public fetchVideos function for external refresh
+  const fetchVideos = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("video_content")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+    if (!error && data) setVideos(data as VideoContent[]);
+    setLoading(false);
+    setRealtimeLoading(false);
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("video_content")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-      if (!error && data) setVideos(data as VideoContent[]);
-      setLoading(false);
+    if (userId && userId !== "anonymous") fetchVideos();
+  }, [userId]);
+
+  // Real-time subscription for video_content
+  useEffect(() => {
+    if (!userId || userId === "anonymous") return;
+    const channel = supabase
+      .channel('video-content-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'video_content',
+          filter: `user_id=eq.${userId}`
+        },
+        () => {
+          setRealtimeLoading(true);
+          fetchVideos();
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
     };
-    if (userId && userId !== "anonymous") fetchData();
   }, [userId]);
 
   // Sort by title (case-insensitive), fallback to video_url
@@ -177,7 +205,13 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
   const modalVideo = sortedVideos.find(v => v.id === modalId);
 
   return (
-    <div className="p-2">
+    <div className="p-2 relative">
+      {realtimeLoading && (
+        <div className="fixed top-4 right-4 z-50 bg-black/80 px-4 py-2 rounded shadow text-white flex items-center gap-2 animate-pulse">
+          <svg className="animate-spin h-5 w-5 text-chat-highlight" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+          Updating content...
+        </div>
+      )}
       <div className="mb-4 text-xl font-bold text-white">YouTube Videos <span className="bg-chat-accent text-xs px-2 py-1 rounded-full ml-2">{sortedVideos.length}</span></div>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full">
         {sortedVideos.map((video) => (
