@@ -11,6 +11,7 @@ interface ContentImage {
   id: string;
   user_id: string;
   permanent_url: string | null;
+  temp_url: string | null;
   content_type: string | null;
   prompt: string | null;
   style: string | null;
@@ -24,8 +25,17 @@ interface ImageGalleryProps {
 
 const TABS = ["all", "flux", "gpt4.1image"];
 
-const isValidSupabaseUrl = (url: string | null | undefined): boolean => {
-  return !!url && url.includes('.supabase.co/storage/');
+const isValidImageUrl = (url: string | null | undefined) => {
+  return (
+    (!!url && url.includes('.supabase.co/storage/')) ||
+    (!!url && url.startsWith('https://drive.google.com/'))
+  );
+};
+
+const getImageUrl = (image: ContentImage) => {
+  if (image.permanent_url && image.permanent_url.includes('.supabase.co/storage/')) return image.permanent_url;
+  if (image.temp_url && image.temp_url.startsWith('https://drive.google.com/')) return image.temp_url;
+  return null;
 };
 
 const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
@@ -47,7 +57,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
       const to = from + PAGE_SIZE - 1;
       const { data, error } = await supabase
         .from("content_images")
-        .select("id, user_id, permanent_url, content_type, prompt, style, blog, created_at")
+        .select("id, user_id, permanent_url, content_type, prompt, style, blog, created_at, temp_url")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .range(from, to);
@@ -58,7 +68,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
           variant: "destructive"
         });
       } else if (data) {
-        const validImages = data.filter(img => isValidSupabaseUrl(img.permanent_url));
+        const validImages = data.filter(img => isValidImageUrl(img.permanent_url) || isValidImageUrl(img.temp_url));
         setImages(prev => reset ? validImages : [...prev, ...validImages]);
       }
     } catch (err) {
@@ -176,7 +186,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ userId }) => {
               <DialogTitle className="text-white">Image Preview</DialogTitle>
             </DialogHeader>
             <div className="flex flex-col gap-4">
-              <img src={enlargedImage.permanent_url!} alt={enlargedImage.prompt || "Image"} className="w-full max-h-[60vh] object-contain rounded-lg bg-black" />
+              <img src={getImageUrl(enlargedImage) || ""} alt={enlargedImage.prompt || "Image"} className="w-full max-h-[60vh] object-contain rounded-lg bg-black" />
               <div className="text-white text-sm break-words">
                 <div><span className="font-semibold">Prompt:</span> {enlargedImage.prompt || <span className="text-gray-400">None</span>}</div>
                 {enlargedImage.style && <div><span className="font-semibold">Style:</span> {enlargedImage.style}</div>}

@@ -13,6 +13,7 @@ interface ContentImage {
   style: string | null;
   blog: string | null;
   created_at: string;
+  temp_url?: string;
 }
 
 interface ImageCardProps {
@@ -24,6 +25,12 @@ interface ImageCardProps {
 
 const isValidSupabaseUrl = (url: string | null | undefined): boolean => {
   return !!url && url.includes('.supabase.co/storage/');
+};
+
+const getImageUrl = (image: ContentImage) => {
+  if (image.permanent_url && image.permanent_url.includes('.supabase.co/storage/')) return image.permanent_url;
+  if (image.temp_url && image.temp_url.startsWith('https://drive.google.com/')) return image.temp_url;
+  return null;
 };
 
 const ImageCard: React.FC<ImageCardProps> = ({ image, onClick, onDelete, onEnlarge }) => {
@@ -60,6 +67,8 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, onClick, onDelete, onEnlar
     }
   };
 
+  const imageUrl = getImageUrl(image);
+
   return (
     <Card 
       key={image.id} 
@@ -94,13 +103,17 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, onClick, onDelete, onEnlar
             )}
           </button>
         )}
-        <img
-          src={image.permanent_url!}
-          alt={image.prompt || "Image"}
-          className="w-full h-full object-cover rounded-t-lg bg-black"
-          onLoad={handleImageLoad}
-          onError={handleImageError}
-        />
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={image.prompt || "Image"}
+            className="w-full h-full object-cover rounded-t-lg bg-black"
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-white text-xs">No Image</div>
+        )}
         {!imageLoaded && !imageError && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/40">
             <svg className="animate-spin w-8 h-8 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>

@@ -8,6 +8,7 @@ interface ContentImage {
   id: string;
   user_id: string;
   permanent_url: string | null;
+  temp_url: string | null;
   content_type: string | null;
   prompt: string | null;
   style: string | null;
@@ -22,6 +23,12 @@ interface ImageDetailsModalProps {
 
 const isValidSupabaseUrl = (url: string | null | undefined): boolean => {
   return !!url && url.includes('.supabase.co/storage/');
+};
+
+const getImageUrl = (image: ContentImage) => {
+  if (image.permanent_url && image.permanent_url.includes('.supabase.co/storage/')) return image.permanent_url;
+  if (image.temp_url && image.temp_url.startsWith('https://drive.google.com/')) return image.temp_url;
+  return null;
 };
 
 const ImageDetailsModal: React.FC<ImageDetailsModalProps> = ({ 
@@ -49,6 +56,8 @@ const ImageDetailsModal: React.FC<ImageDetailsModalProps> = ({
 
   if (!selectedImage) return null;
 
+  const imageUrl = getImageUrl(selectedImage);
+
   return (
     <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
       <DialogContent className="w-full max-w-full sm:max-w-2xl h-auto max-h-[90vh] overflow-y-auto bg-black border-chat-highlight p-2 sm:p-6">
@@ -57,9 +66,9 @@ const ImageDetailsModal: React.FC<ImageDetailsModalProps> = ({
         </DialogHeader>
         <div className="flex flex-col md:flex-row gap-6">
           <div className="md:w-1/2">
-            {isValidSupabaseUrl(selectedImage.permanent_url) ? (
+            {imageUrl ? (
               <img 
-                src={selectedImage.permanent_url!} 
+                src={imageUrl} 
                 alt={selectedImage.prompt || "Generated image"} 
                 className="w-full max-h-[50vh] object-contain rounded-lg bg-black" 
               />
@@ -98,13 +107,13 @@ const ImageDetailsModal: React.FC<ImageDetailsModalProps> = ({
               )}
               
               <div className="flex flex-wrap gap-2 pt-2">
-                {isValidSupabaseUrl(selectedImage.permanent_url) && (
+                {imageUrl && (
                   <>
                     <Button 
                       size="sm" 
                       variant="outline" 
                       className="flex items-center gap-1"
-                      onClick={() => handleCopyUrl(selectedImage.permanent_url!)}
+                      onClick={() => handleCopyUrl(imageUrl)}
                     >
                       <Copy size={16} /> Copy URL
                     </Button>
@@ -112,7 +121,7 @@ const ImageDetailsModal: React.FC<ImageDetailsModalProps> = ({
                       size="sm" 
                       variant="outline"
                       className="flex items-center gap-1"
-                      onClick={() => window.open(selectedImage.permanent_url!, "_blank")}
+                      onClick={() => window.open(imageUrl, "_blank")}
                     >
                       <ExternalLink size={16} /> Open
                     </Button>
@@ -120,7 +129,7 @@ const ImageDetailsModal: React.FC<ImageDetailsModalProps> = ({
                       size="sm" 
                       variant="outline"
                       className="flex items-center gap-1"
-                      onClick={() => handleDownloadImage(selectedImage.permanent_url!)}
+                      onClick={() => handleDownloadImage(imageUrl)}
                     >
                       <Download size={16} /> Download
                     </Button>
