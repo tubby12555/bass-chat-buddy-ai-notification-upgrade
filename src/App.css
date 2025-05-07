@@ -1,3 +1,4 @@
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -39,4 +40,70 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* Enhanced UI Elements */
+.glass-panel {
+  @apply backdrop-blur-xl bg-white/5 border border-white/10 shadow-lg;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.hover-glow {
+  transition: all 0.3s ease;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 15px 2px var(--chat-highlight);
+  transform: translateY(-2px);
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.text-gradient {
+  background: linear-gradient(90deg, var(--chat-accent), var(--chat-highlight));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.smooth-shadow {
+  box-shadow: 
+    0 2px 4px rgba(0,0,0,0.1),
+    0 8px 16px rgba(0,0,0,0.1);
+}
+
+.button-glow {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s;
+}
+
+.button-glow::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  bottom: -50%;
+  left: -50%;
+  background: linear-gradient(to bottom right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 100%);
+  transform: rotate(30deg) translate(-100%, -70%) scale(1.5);
+  transition: all 0.5s;
+}
+
+.button-glow:hover::after {
+  transform: rotate(30deg) translate(100%, 70%) scale(1.5);
 }
