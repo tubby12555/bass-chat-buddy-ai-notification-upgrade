@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Image } from "lucide-react";
@@ -37,7 +36,7 @@ const ImageDetailsModal: React.FC<ImageDetailsModalProps> = ({
 
   return (
     <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-      <DialogContent className="w-full max-w-4xl h-auto max-h-[90vh] overflow-y-auto bg-gradient-to-br from-black to-gray-900 border border-chat-highlight/50 p-6 shadow-xl shadow-chat-highlight/20">
+      <DialogContent className="w-full max-w-xs sm:max-w-4xl h-auto max-h-[90vh] overflow-y-auto bg-gradient-to-br from-black to-gray-900 border border-chat-highlight/50 p-2 sm:p-6 shadow-xl shadow-chat-highlight/20">
         <DialogHeader>
           <DialogTitle className="text-white text-xl font-bold flex items-center gap-2">
             <Image size={20} className="text-chat-highlight" />

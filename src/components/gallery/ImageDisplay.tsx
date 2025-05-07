@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Image } from "lucide-react";
 import { getImageUrl } from "@/utils/imageUrlUtils";
@@ -54,6 +53,8 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({
       <img 
         src={imageUrl} 
         alt={image.prompt || "Generated image"} 
+        loading="lazy"
+        aria-label="Gallery image"
         className={`w-full h-auto max-h-[50vh] object-contain transition-all duration-500 ${imageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
         onLoad={onImageLoad}
         onError={onImageError}

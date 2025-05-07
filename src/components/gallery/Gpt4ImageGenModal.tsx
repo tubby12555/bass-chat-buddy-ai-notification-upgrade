@@ -88,7 +88,7 @@ const Gpt4ImageGenModal: React.FC<Gpt4ImageGenModalProps> = ({ open, onOpenChang
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-chat-assistant border-chat-highlight">
+      <DialogContent className="w-full max-w-xs sm:max-w-md p-2 sm:p-6 bg-chat-assistant border-chat-highlight">
         <DialogHeader>
           <DialogTitle className="text-white">Gen Image with GPT-4.1</DialogTitle>
         </DialogHeader>

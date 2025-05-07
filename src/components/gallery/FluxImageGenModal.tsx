@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -86,7 +85,7 @@ const FluxImageGenModal: React.FC<FluxImageGenModalProps> = ({ open, onOpenChang
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-chat-assistant border-chat-highlight">
+      <DialogContent className="w-full max-w-xs sm:max-w-md p-2 sm:p-6 bg-chat-assistant border-chat-highlight">
         <DialogHeader>
           <DialogTitle className="text-white">Generate Image with Flux</DialogTitle>
         </DialogHeader>

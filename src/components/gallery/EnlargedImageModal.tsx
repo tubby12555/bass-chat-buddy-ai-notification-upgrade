@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getImageUrl } from "@/utils/imageUrlUtils";
@@ -28,7 +27,7 @@ const EnlargedImageModal: React.FC<EnlargedImageModalProps> = ({ enlargedImage, 
   
   return (
     <Dialog open={!!enlargedImage} onOpenChange={onClose}>
-      <DialogContent className="w-full max-w-full sm:max-w-4xl h-auto max-h-[90vh] overflow-y-auto bg-gradient-to-br from-black to-gray-900 border border-chat-highlight p-2 sm:p-6 shadow-xl shadow-chat-highlight/20">
+      <DialogContent className="w-full max-w-xs sm:max-w-4xl h-auto max-h-[90vh] overflow-y-auto bg-gradient-to-br from-black to-gray-900 border border-chat-highlight p-2 sm:p-6 shadow-xl shadow-chat-highlight/20">
         <DialogHeader>
           <DialogTitle className="text-white text-xl flex items-center gap-2">
             <span className="text-chat-highlight">Image Preview</span>
@@ -39,6 +38,8 @@ const EnlargedImageModal: React.FC<EnlargedImageModalProps> = ({ enlargedImage, 
             <img 
               src={imageUrl || ""} 
               alt={enlargedImage.prompt || "Image"} 
+              loading="lazy"
+              aria-label="Enlarged image"
               className="max-w-full max-h-[70vh] object-contain rounded-lg"
               onError={(e) => {
                 e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpolyline points='21 15 16 10 5 21'%3E%3C/polyline%3E%3C/svg%3E";

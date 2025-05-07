@@ -218,7 +218,7 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
           <div key={video.id} className="bg-chat-assistant rounded-lg shadow-lg flex flex-col w-full max-w-full">
             <div className="relative cursor-pointer" onClick={() => setModalId(video.id)}>
               {video.thumbnail_url ? (
-                <img src={video.thumbnail_url} alt={video.title || video.video_url} className="rounded-t-lg w-full h-40 object-cover" />
+                <img src={video.thumbnail_url} alt={video.title || video.video_url} className="rounded-t-lg w-full h-40 object-cover" loading="lazy" />
               ) : (
                 <div className="w-full h-40 bg-black/30 flex items-center justify-center rounded-t-lg text-4xl text-white">🎬</div>
               )}
@@ -249,10 +249,10 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
             className="bg-chat-assistant rounded-lg shadow-lg w-full max-w-full sm:max-w-2xl mx-auto relative max-h-[90vh] overflow-y-auto p-2 sm:p-6"
             onClick={e => e.stopPropagation()}
           >
-            <button className="absolute top-2 right-2 text-white hover:text-chat-highlight" onClick={() => setModalId(null)}><X size={28} /></button>
+            <button className="absolute top-2 right-2 text-white hover:text-chat-highlight" onClick={() => setModalId(null)} aria-label="Close modal"><X size={28} /></button>
             <div className="flex flex-col sm:flex-row gap-4 items-center mb-4">
               {modalVideo.thumbnail_url ? (
-                <img src={modalVideo.thumbnail_url} alt={modalVideo.title || modalVideo.video_url} className="rounded w-32 h-20 object-cover" />
+                <img src={modalVideo.thumbnail_url} alt={modalVideo.title || modalVideo.video_url} className="rounded w-32 h-20 object-cover" loading="lazy" />
               ) : (
                 <div className="w-32 h-20 bg-black/30 flex items-center justify-center rounded text-3xl text-white">🎬</div>
               )}

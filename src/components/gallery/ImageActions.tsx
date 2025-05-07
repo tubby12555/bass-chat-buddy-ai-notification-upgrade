@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Copy, Download, ExternalLink } from "lucide-react";
@@ -44,6 +43,7 @@ const ImageActions: React.FC<ImageActionsProps> = ({ imageUrl }) => {
         variant="outline" 
         className="flex items-center gap-1 bg-black/40 border-chat-highlight/50 hover:bg-chat-highlight/20 button-glow"
         onClick={() => handleCopyUrl(imageUrl)}
+        aria-label="Copy image URL"
       >
         <Copy size={16} className="text-chat-highlight" /> Copy URL
       </Button>
@@ -52,6 +52,7 @@ const ImageActions: React.FC<ImageActionsProps> = ({ imageUrl }) => {
         variant="outline"
         className="flex items-center gap-1 bg-black/40 border-chat-highlight/50 hover:bg-chat-highlight/20 button-glow"
         onClick={() => window.open(imageUrl, "_blank")}
+        aria-label="Open image in new tab"
       >
         <ExternalLink size={16} className="text-chat-highlight" /> Open
       </Button>
@@ -60,6 +61,7 @@ const ImageActions: React.FC<ImageActionsProps> = ({ imageUrl }) => {
         variant="outline"
         className="flex items-center gap-1 bg-black/40 border-chat-highlight/50 hover:bg-chat-highlight/20 button-glow"
         onClick={() => handleDownloadImage(imageUrl)}
+        aria-label="Download image"
       >
         <Download size={16} className="text-chat-highlight" /> Download
       </Button>

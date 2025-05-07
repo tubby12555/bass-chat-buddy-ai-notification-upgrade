@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Image } from "lucide-react";
@@ -76,6 +75,7 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, onClick, onDelete, onEnlar
             className="absolute top-2 left-2 bg-black/70 hover:bg-black/90 text-white rounded-full p-2 flex items-center justify-center z-10 focus:outline-none focus:ring-2 focus:ring-chat-highlight focus:ring-offset-2 w-9 h-9 opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={(e) => { e.stopPropagation(); onEnlarge(); }}
             title="Enlarge"
+            aria-label="Enlarge image"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 3h6m0 0v6m0-6L10 14m-7 7h6m0 0v-6m0 6L14 10" />
@@ -89,6 +89,7 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, onClick, onDelete, onEnlar
             onClick={handleDelete}
             disabled={deleting}
             title="Delete"
+            aria-label="Delete image"
           >
             {deleting ? (
               <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
@@ -109,6 +110,8 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, onClick, onDelete, onEnlar
           <img
             src={imageUrl}
             alt={image.prompt || "Image"}
+            loading="lazy"
+            aria-label="Gallery card image"
             className={`w-full h-full object-cover transition-all duration-500 ${hovered ? 'scale-105' : 'scale-100'}`}
             onLoad={handleImageLoad}
             onError={handleImageError}
