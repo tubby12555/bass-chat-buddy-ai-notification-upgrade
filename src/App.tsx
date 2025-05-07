@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -84,9 +83,11 @@ const App = () => {
         } else {
           console.log("Profile successfully created for:", userId);
         }
-      } else {
-        console.log("Profile already exists for user:", userId);
-      }
+      } 
+      // else {
+      //   // Existing profile detected; no action needed
+      //   // console.log("Profile already exists for user:", userId);
+      // }
     } catch (error) {
       console.error("Error in profile check/creation:", error);
     }

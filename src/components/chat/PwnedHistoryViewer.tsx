@@ -60,11 +60,14 @@ const PwnedHistoryViewer: React.FC<PwnedHistoryViewerProps> = ({
         setLoading(false);
       }
     };
-    if (userId) {
+    // Only fetch sessions for authenticated users (not 'anonymous')
+    if (!userId || userId === 'anonymous') {
       setSessions({});
-      setPage(0);
-      fetchSessions(true);
+      return;
     }
+    setSessions({});
+    setPage(0);
+    fetchSessions(true);
   }, [userId, page]);
 
   const handleDeleteSession = async () => {
