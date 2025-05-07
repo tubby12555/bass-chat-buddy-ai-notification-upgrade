@@ -1,7 +1,6 @@
 
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import EmptyGalleryState from "./EmptyGalleryState";
 
 interface ImageFilterProps {
   tab: string;
@@ -11,12 +10,19 @@ interface ImageFilterProps {
   filteredImages: any[];
 }
 
+const getTabLabel = (tabValue: string): string => {
+  switch (tabValue) {
+    case "all": return "All Images";
+    case "flux": return "Flux";
+    case "gpt4.1image": return "GPT-4.1";
+    default: return tabValue;
+  }
+};
+
 const ImageFilter: React.FC<ImageFilterProps> = ({ 
   tab, 
   setTab, 
-  tabs, 
-  loading, 
-  filteredImages 
+  tabs
 }) => {
   return (
     <Tabs defaultValue="all" value={tab} onValueChange={setTab} className="w-full">
@@ -27,7 +33,7 @@ const ImageFilter: React.FC<ImageFilterProps> = ({
             value={t} 
             className="text-white data-[state=active]:bg-chat-highlight data-[state=active]:text-black"
           >
-            {t === "all" ? "All Images" : t === "flux" ? "Flux" : "GPT-4.1"}
+            {getTabLabel(t)}
           </TabsTrigger>
         ))}
       </TabsList>

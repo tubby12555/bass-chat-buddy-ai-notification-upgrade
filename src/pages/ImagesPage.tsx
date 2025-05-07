@@ -78,7 +78,7 @@ const ImagesPage: React.FC = () => {
         </div>
         
         <div className="w-full max-w-full">
-          <ImageGallery userId={userId} />
+          {userId && <ImageGallery userId={userId} />}
         </div>
       </div>
     </div>
