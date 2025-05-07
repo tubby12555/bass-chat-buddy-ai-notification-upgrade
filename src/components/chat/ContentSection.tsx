@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -72,6 +72,7 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
   const [blogNotes, setBlogNotes] = useState("");
   const [blogLoading, setBlogLoading] = useState(false);
   const { toast } = useToast();
+  const prevVideosRef = useRef<VideoContent[]>([]);
 
   // Public fetchVideos function for external refresh
   const fetchVideos = async () => {
@@ -81,7 +82,32 @@ const ContentSection: React.FC<{ userId: string }> = ({ userId }) => {
       .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
-    if (!error && data) setVideos(data as VideoContent[]);
+    if (!error && data) {
+      // Detect new video(s)
+      const prevIds = new Set(prevVideosRef.current.map(v => v.id));
+      const newVideos = (data as VideoContent[]).filter(v => !prevIds.has(v.id));
+      if (prevVideosRef.current.length > 0 && newVideos.length > 0) {
+        // Only notify for the first new video (could be extended for multiple)
+        const newVideo = newVideos[0];
+        const t = toast({
+          title: "New video added!",
+          description: newVideo.title || newVideo.video_url,
+          action: (
+            <button
+              className="bg-chat-accent text-white px-3 py-1 rounded ml-2"
+              onClick={() => {
+                setModalId(newVideo.id);
+                t.dismiss();
+              }}
+            >
+              View
+            </button>
+          ),
+        });
+      }
+      setVideos(data as VideoContent[]);
+      prevVideosRef.current = data as VideoContent[];
+    }
     setLoading(false);
     setRealtimeLoading(false);
   };
