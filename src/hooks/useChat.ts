@@ -82,13 +82,15 @@ export const useChat = () => {
           .order("updated_at", { ascending: false });
         if (error) throw error;
         // Type guard: filter only valid rows with session_id
-        // Use 'any' for compatibility with Supabase loose types and legacy rows
-        const validRows: any[] = (data || []).filter((row: any) => row && typeof row.session_id === "string");
+        const hasSessionId = (row: unknown): row is { session_id: string } =>
+          typeof row === 'object' && row !== null && typeof (row as { session_id?: unknown }).session_id === 'string';
+        const validRows = (data || []).filter(hasSessionId);
         // Group by session_id
         const grouped: Record<string, ChatDataRow[]> = {};
-        validRows.forEach((row: any) => {
-          if (!grouped[row.session_id]) grouped[row.session_id] = [];
-          grouped[row.session_id].push(row as ChatDataRow);
+        validRows.forEach((row) => {
+          const r = row as ChatDataRow;
+          if (!grouped[r.session_id]) grouped[r.session_id] = [];
+          grouped[r.session_id].push(r);
         });
         // Map to Session[]
         const sessionList: Session[] = Object.entries(grouped).map(([sessionId, rows]) => {
@@ -146,72 +148,71 @@ export const useChat = () => {
     }
   }, [sessions]);
 
-  // Create new session if none exists
-  useEffect(() => {
-    if (sessions.length === 0) {
-      createNewSession();
-    }
-  }, [sessions]);
-
-  const createNewSession = () => {
+  // Create new session only when user sends a message and no session exists
+  const createNewSession = (firstMessage?: string): string => {
     const newSessionId = uuidv4();
     const newSession: Session = {
       id: newSessionId,
-      title: "New Chat",
+      title: firstMessage ? firstMessage.slice(0, 30) : "New Chat",
       createdAt: Date.now(),
-      messages: [
-        {
-          id: uuidv4(),
-          role: "system",
-          content: `Welcome to BassProChat! Using ${selectedModel} model. How can I assist with your fishing questions today?`,
-          timestamp: Date.now()
-        }
-      ]
+      messages: firstMessage
+        ? [
+            {
+              id: uuidv4(),
+              role: "user",
+              content: firstMessage,
+              timestamp: Date.now(),
+            },
+          ]
+        : [],
     };
-
-    setSessions(prev => [newSession, ...prev]);
+    setSessions((prev) => [newSession, ...prev]);
     setCurrentSessionId(newSessionId);
+    return newSessionId;
   };
 
   const handleSendMessage = async (message: string) => {
     if (!message.trim() || isLoading) return;
-    
     setIsLoading(true);
-    
-    if (!currentSessionId || !sessions.find(s => s.id === currentSessionId)) {
-      createNewSession();
-      return;
+    let sessionId = currentSessionId;
+    // If no session, create one with the first message
+    if (!sessionId || !sessions.find((s) => s.id === sessionId)) {
+      sessionId = createNewSession(message);
+    } else {
+      // Add user message to existing session
+      const userMessage: Message = {
+        id: uuidv4(),
+        role: "user",
+        content: message,
+        timestamp: Date.now(),
+      };
+      setSessions((prev) =>
+        prev.map((session) => {
+          if (session.id === sessionId) {
+            const updatedMessages = [...session.messages, userMessage];
+            return {
+              ...session,
+              messages: updatedMessages,
+              title:
+                session.title === "New Chat"
+                  ? message.slice(0, 30)
+                  : session.title,
+            };
+          }
+          return session;
+        })
+      );
     }
-    
-    const userMessage: Message = {
-      id: uuidv4(),
-      role: "user",
-      content: message,
-      timestamp: Date.now()
-    };
-    
-    // Update state with user message
-    setSessions(prev => prev.map(session => {
-      if (session.id === currentSessionId) {
-        const updatedMessages = [...session.messages, userMessage];
-        return {
-          ...session,
-          messages: updatedMessages,
-          title: session.title === "New Chat" ? message.slice(0, 30) : session.title
-        };
-      }
-      return session;
-    }));
     
     try {
       const USER_ID = user?.id || "anonymous";
-      const SESSION_ID = currentSessionId;
+      const SESSION_ID = sessionId;
       
       const assistantMessage = await sendMessage(message, USER_ID, SESSION_ID, selectedModel);
       
       // Update state with assistant response
       setSessions(prev => prev.map(session => {
-        if (session.id === currentSessionId) {
+        if (session.id === sessionId) {
           return {
             ...session,
             messages: [
@@ -233,7 +234,7 @@ export const useChat = () => {
       
       // Add error message
       setSessions(prev => prev.map(session => {
-        if (session.id === currentSessionId) {
+        if (session.id === sessionId) {
           return {
             ...session,
             messages: [
