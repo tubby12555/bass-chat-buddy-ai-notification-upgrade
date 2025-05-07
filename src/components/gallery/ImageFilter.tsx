@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Image } from "lucide-react";
+import EmptyGalleryState from "./EmptyGalleryState";
 
 interface ImageFilterProps {
   tab: string;
@@ -32,32 +32,9 @@ const ImageFilter: React.FC<ImageFilterProps> = ({
         ))}
       </TabsList>
 
-      <TabsContent value={tab} className="mt-0">
-        {loading ? (
-          <div className="flex justify-center items-center min-h-[200px]">
-            <div className="text-white flex items-center">
-              <Image className="animate-pulse mr-2" size={24} />
-              <span>Loading images...</span>
-            </div>
-          </div>
-        ) : filteredImages.length === 0 ? (
-          <EmptyImageState tab={tab} />
-        ) : null}
-      </TabsContent>
+      <TabsContent value={tab} className="mt-0" />
     </Tabs>
   );
 };
-
-const EmptyImageState: React.FC<{ tab: string }> = ({ tab }) => (
-  <div className="text-white p-8 text-center bg-chat-assistant/30 rounded-lg">
-    <Image className="mx-auto mb-4 opacity-50" size={48} />
-    <h3 className="text-xl font-medium mb-2">No images found</h3>
-    <p className="text-gray-400">
-      {tab === "all" 
-        ? "You haven't generated any images yet." 
-        : `You haven't generated any ${tab} images yet.`}
-    </p>
-  </div>
-);
 
 export default ImageFilter;

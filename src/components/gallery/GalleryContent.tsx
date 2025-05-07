@@ -35,7 +35,7 @@ const GalleryContent: React.FC<GalleryContentProps> = ({
   onLoadMore,
   hasMoreImages
 }) => {
-  if (loading) {
+  if (loading && filteredImages.length === 0) {
     return <GalleryLoadingState />;
   }
 

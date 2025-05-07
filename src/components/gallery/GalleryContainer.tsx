@@ -7,6 +7,8 @@ import ImageGrid from "./ImageGrid";
 import ImageDetailsModal from "./ImageDetailsModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getImageUrl } from "@/utils/imageUrlUtils";
+import GalleryContent from "./GalleryContent";
+import EnlargedImageModal from "./EnlargedImageModal";
 
 interface ContentImage {
   id: string;
