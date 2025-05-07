@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { Textarea } from "@/components/ui/textarea";
 
 const STYLE_OPTIONS = [
   "None (Default)",
@@ -21,7 +22,9 @@ interface FluxImageGenModalProps {
 
 const FluxImageGenModal: React.FC<FluxImageGenModalProps> = ({ open, onOpenChange, userId }) => {
   const [prompt, setPrompt] = useState("");
+  const [styleMode, setStyleMode] = useState<"dropdown" | "custom">("dropdown");
   const [style, setStyle] = useState(STYLE_OPTIONS[0]);
+  const [customStyle, setCustomStyle] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -31,48 +34,49 @@ const FluxImageGenModal: React.FC<FluxImageGenModalProps> = ({ open, onOpenChang
     setLoading(true);
     setError(null);
     try {
+      // Determine which style to send
+      let styleToSend = undefined;
+      if (styleMode === "dropdown" && style !== STYLE_OPTIONS[0]) styleToSend = style;
+      if (styleMode === "custom" && customStyle.trim()) styleToSend = customStyle.trim();
       // Create an entry in content_images first
       const { data: imageData, error: insertError } = await supabase
         .from("content_images")
         .insert({
           user_id: userId,
           prompt,
-          style,
+          style: styleToSend,
           content_type: "flux"
         })
         .select()
         .single();
-      
       if (insertError) throw insertError;
-      
       // Now send the generation request
+      const payload: Record<string, unknown> = {
+        contentType: "flux",
+        prompt,
+        userId,
+        imageId: imageData.id
+      };
+      if (styleToSend) payload.style = styleToSend;
       const res = await fetch("https://n8n.srv728397.hstgr.cloud/webhook/gemini", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contentType: "flux",
-          prompt,
-          style,
-          userId,
-          imageId: imageData.id // Send the image ID to link back to our record
-        })
+        body: JSON.stringify(payload)
       });
-      
       if (!res.ok) throw new Error("Failed to submit image generation request");
-      
       toast({
         title: "Image Generation Submitted",
         description: "Your image is being generated. It will appear in your gallery when ready.",
       });
-      
       onOpenChange(false);
       setPrompt("");
       setStyle(STYLE_OPTIONS[0]);
+      setCustomStyle("");
+      setStyleMode("dropdown");
     } catch (err: unknown) {
       let message = "Unknown error";
       if (err instanceof Error) message = err.message;
       setError(message);
-      
       toast({
         title: "Error",
         description: message,
@@ -92,26 +96,54 @@ const FluxImageGenModal: React.FC<FluxImageGenModalProps> = ({ open, onOpenChang
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
             <label className="block text-white mb-1">Prompt</label>
-            <input
+            <Textarea
               className="w-full p-2 rounded bg-black/30 text-white border border-chat-accent"
-              type="text"
               value={prompt}
               onChange={e => setPrompt(e.target.value)}
               placeholder="Describe the image you want to generate..."
               required
+              rows={4}
             />
           </div>
           <div>
             <label className="block text-white mb-1">Style</label>
-            <select
-              className="w-full p-2 rounded bg-black/30 text-white border border-chat-accent"
-              value={style}
-              onChange={e => setStyle(e.target.value)}
-            >
-              {STYLE_OPTIONS.map(opt => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
+            <div className="flex gap-4 mb-2">
+              <label className="flex items-center gap-1 text-white">
+                <input
+                  type="radio"
+                  checked={styleMode === "dropdown"}
+                  onChange={() => setStyleMode("dropdown")}
+                />
+                Choose from list
+              </label>
+              <label className="flex items-center gap-1 text-white">
+                <input
+                  type="radio"
+                  checked={styleMode === "custom"}
+                  onChange={() => setStyleMode("custom")}
+                />
+                Custom style
+              </label>
+            </div>
+            {styleMode === "dropdown" ? (
+              <select
+                className="w-full p-2 rounded bg-black/30 text-white border border-chat-accent"
+                value={style}
+                onChange={e => setStyle(e.target.value)}
+              >
+                {STYLE_OPTIONS.map(opt => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            ) : (
+              <input
+                className="w-full p-2 rounded bg-black/30 text-white border border-chat-accent"
+                type="text"
+                value={customStyle}
+                onChange={e => setCustomStyle(e.target.value)}
+                placeholder="Enter your own style (e.g. 'cyberpunk watercolor')"
+              />
+            )}
           </div>
           {error && <div className="text-red-500 text-sm">{error}</div>}
           <div className="flex gap-2 justify-end">
